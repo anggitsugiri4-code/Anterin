@@ -1,0 +1,2407 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#c81e34">
+<title>Anterin</title>
+<!-- PWA: manifest + icon, biar bisa "Add to Home Screen" / diinstall kayak app -->
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="A'ini Mart">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   DESIGN TOKENS — warna & tipografi khas "warung/kraft paper"
+   ============================================================ */
+:root{
+  --paper:36 55% 96%;
+  --paper-mid:36 55% 93%;
+  --paper-deep:34 42% 86%;
+  --paper-line:32 38% 80%;
+  --ink:20 30% 16%;
+  --ink-soft:20 15% 42%;
+  --card:0 0% 100%;
+  --receipt:40 60% 98%;
+  --red:355 78% 46%;
+  --green:142 58% 36%;
+  --gold:43 97% 58%;
+  --gold-ink:28 70% 22%;
+  --r-sm:10px;
+  --r-md:16px;
+  --r-lg:24px;
+  --shadow-sm:0 1px 2px rgba(35,20,8,.08);
+  --shadow-md:0 10px 30px -10px rgba(35,20,8,.35);
+  --dur:180ms;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  font-family:'Space Grotesk',system-ui,-apple-system,sans-serif;
+  color:hsl(var(--ink));
+  background:
+    radial-gradient(circle at 1px 1px, hsl(var(--paper-line)/.45) 1px, transparent 0) 0 0/16px 16px,
+    hsl(var(--paper-deep));
+  min-height:100vh;
+  -webkit-font-smoothing:antialiased;
+  display:flex;
+  justify-content:center;
+}
+.app{width:100%;max-width:460px;min-height:100vh;background:hsl(var(--card));position:relative;display:flex;flex-direction:column}
+@media (min-width:560px){
+  body{padding:40px 16px}
+  .app{min-height:calc(100vh - 80px);border-radius:var(--r-lg);overflow:hidden;box-shadow:var(--shadow-md)}
+}
+button{font-family:inherit;cursor:pointer}
+input,textarea{font-family:inherit}
+.icon{width:1em;height:1em;display:inline-block;vertical-align:-0.15em}
+.font-chalk{font-family:'Caveat',cursive}
+.font-mono{font-family:'Space Mono',ui-monospace,monospace}
+:focus-visible{outline:2px solid hsl(var(--red));outline-offset:2px;border-radius:4px}
+@media (prefers-reduced-motion: reduce){*{transition:none !important;animation:none !important}}
+
+/* ---------- Header / chalkboard ---------- */
+.chalkboard{
+  position:relative;
+  overflow:hidden;
+  background:linear-gradient(160deg, hsl(var(--red)), hsl(0 65% 34%));
+  color:#fff;
+  padding:18px 16px 16px;
+  border-radius:0 0 22px 22px;
+  box-shadow:inset 0 -18px 26px -20px rgba(0,0,0,.35);
+}
+/* Ilustrasi toko (SVG custom, gaya sketsa kraft) sebagai lapisan dekoratif di
+   belakang konten header. Diposisikan mepet kanan-bawah lalu di-mask supaya
+   memudar ke arah kiri, jadi logo/teks tetap kontras di atas warna solid. */
+.chalkboard::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  z-index:0;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 320 200'%3E%3Cg fill='none' stroke='%23ffffff' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M46 22 L276 22 L276 46 L262 34 L248 46 L234 34 L220 46 L206 34 L192 46 L178 34 L164 46 L150 34 L136 46 L122 34 L108 46 L94 34 L80 46 L66 34 L46 46 Z' fill='%23ffffff' fill-opacity='0.14' stroke-opacity='0.9'/%3E%3Crect x='62' y='46' width='198' height='122' rx='8' stroke-opacity='0.75'/%3E%3Crect x='142' y='98' width='38' height='70' rx='3' stroke-opacity='0.75'/%3E%3Ccircle cx='172' cy='132' r='2' fill='%23ffffff' fill-opacity='0.75' stroke='none'/%3E%3Crect x='76' y='62' width='54' height='58' rx='4' stroke-opacity='0.6'/%3E%3Cline x1='76' y1='81' x2='130' y2='81' stroke-opacity='0.5'/%3E%3Cline x1='76' y1='101' x2='130' y2='101' stroke-opacity='0.5'/%3E%3Ccircle cx='88' cy='73' r='6' stroke-opacity='0.55'/%3E%3Ccircle cx='103' cy='73' r='6' stroke-opacity='0.55'/%3E%3Ccircle cx='118' cy='73' r='6' stroke-opacity='0.55'/%3E%3Ccircle cx='88' cy='93' r='7' stroke-opacity='0.55'/%3E%3Ccircle cx='105' cy='94' r='6' stroke-opacity='0.55'/%3E%3Crect x='192' y='62' width='54' height='58' rx='4' stroke-opacity='0.6'/%3E%3Cline x1='192' y1='81' x2='246' y2='81' stroke-opacity='0.5'/%3E%3Cline x1='192' y1='101' x2='246' y2='101' stroke-opacity='0.5'/%3E%3Ccircle cx='204' cy='74' r='6' stroke-opacity='0.55'/%3E%3Ccircle cx='219' cy='74' r='6' stroke-opacity='0.55'/%3E%3Ccircle cx='234' cy='74' r='6' stroke-opacity='0.55'/%3E%3Cpath d='M198 118 q6 -12 12 0 q6 -12 12 0 q6 -12 12 0 z' stroke-opacity='0.55'/%3E%3Cline x1='160' y1='46' x2='160' y2='58' stroke-opacity='0.7'/%3E%3Crect x='138' y='58' width='44' height='17' rx='3' fill='%23ffcf4d' fill-opacity='0.85' stroke='%23ffcf4d' stroke-opacity='0.9'/%3E%3C/g%3E%3C/svg%3E");
+  background-repeat:no-repeat;
+  background-position:right -6px bottom -14px;
+  background-size:230px auto;
+  -webkit-mask-image:linear-gradient(90deg, transparent 0%, #000 38%, #000 100%);
+  mask-image:linear-gradient(90deg, transparent 0%, #000 38%, #000 100%);
+  pointer-events:none;
+}
+.chalkboard>*{position:relative;z-index:1}
+/* Varian polos - dipakai di hero-card beranda yang nampilin nama toko lagi
+   di bawah search bar; ilustrasi cuma perlu sekali di header utama, biar
+   kartu ini tidak keliatan penuh/berulang. */
+.chalkboard-plain::before{display:none}
+.store-mark{width:38px;height:38px;border-radius:999px;background:hsl(var(--gold));color:hsl(var(--gold-ink));display:flex;align-items:center;justify-content:center;font-family:'Caveat',cursive;font-weight:700;font-size:22px;flex:none;box-shadow:var(--shadow-sm);overflow:hidden}
+.store-mark img{width:100%;height:100%;object-fit:cover}
+.icon-btn{width:36px;height:36px;border-radius:999px;background:rgba(255,255,255,.14);border:none;color:#fff;display:flex;align-items:center;justify-content:center;position:relative;transition:background var(--dur)}
+.icon-btn:hover{background:rgba(255,255,255,.24)}
+.icon-btn:active{transform:scale(.94)}
+.badge-count{position:absolute;top:-4px;right:-4px;background:hsl(var(--gold));color:hsl(var(--gold-ink));font-family:'Space Mono',monospace;font-size:10px;font-weight:700;border-radius:999px;min-width:16px;height:16px;padding:0 3px;display:flex;align-items:center;justify-content:center;line-height:1}
+.status-pill{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;padding:3px 9px;border-radius:999px;background:rgba(255,255,255,.14)}
+.dot{width:6px;height:6px;border-radius:999px}
+
+.search-row{display:flex;align-items:center;gap:8px;background:hsl(var(--receipt));border-radius:999px;padding:9px 14px;margin-top:14px}
+.search-row input{flex:1;min-width:0;border:none;background:transparent;outline:none;font-size:14px;color:hsl(var(--ink))}
+.search-row input::placeholder{color:hsl(var(--ink-soft))}
+.search-row .icon{color:hsl(var(--ink-soft));flex:none}
+.search-clear{border:none;background:none;color:hsl(var(--ink-soft));display:flex;flex:none}
+
+/* ---------- Generic layout bits ---------- */
+.section{padding:0 16px}
+.h-scroll{display:flex;gap:8px;overflow-x:auto;padding:14px 16px 4px;scrollbar-width:none}
+.h-scroll::-webkit-scrollbar{display:none}
+.chip{flex:none;padding:8px 16px;border-radius:999px;font-size:13px;font-weight:500;border:1px solid hsl(var(--paper-line));background:hsl(var(--paper-mid));color:hsl(var(--ink));white-space:nowrap;transition:background var(--dur)}
+.chip[data-active="true"]{background:hsl(var(--ink));border-color:hsl(var(--ink));color:#fff}
+
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:14px;padding:14px 16px 18px}
+
+/* price-tag product card: rounded bottom, punch-hole circle on top */
+.price-tag{position:relative;background:hsl(var(--card));border:1px solid hsl(var(--paper-line));border-radius:6px 6px 14px 14px;padding:22px 12px 12px;box-shadow:var(--shadow-sm);display:flex;flex-direction:column}
+.price-tag:before{content:"";position:absolute;top:-8px;left:50%;transform:translateX(-50%);width:14px;height:14px;border-radius:999px;background:hsl(var(--paper-deep));border:2px solid hsl(var(--paper-line))}
+.price-tag .thumb{font-size:38px;text-align:center;line-height:1;margin-bottom:8px}
+.price-tag img.thumb-img{width:100%;height:64px;object-fit:cover;border-radius:8px;margin-bottom:8px}
+.price-tag .name{font-size:13px;font-weight:600;line-height:1.35;min-height:2.5em}
+.price-tag .unit{font-size:11px;color:hsl(var(--ink-soft));margin-top:2px}
+.price-tag .price{font-family:'Space Mono',monospace;font-weight:700;color:hsl(var(--red));margin-top:8px;font-size:15px}
+.price-tag .price-old{font-family:'Space Mono',monospace;font-size:11px;color:hsl(var(--ink-soft));text-decoration:line-through}
+.discount-flag{position:absolute;top:8px;right:8px;background:hsl(var(--red));color:#fff;font-size:10px;font-weight:700;border-radius:999px;padding:2px 7px}
+.stock-flag{margin-top:6px;align-self:flex-start;font-size:10px;font-weight:600;color:hsl(var(--red));border:1px solid hsl(var(--red));border-radius:999px;padding:2px 8px}
+.stock-out{margin-top:10px;text-align:center;font-size:11px;font-weight:600;color:hsl(var(--ink-soft));background:hsl(var(--paper-mid));border-radius:8px;padding:9px}
+.btn-add{margin-top:10px;border:none;border-radius:8px;padding:8px 0;font-size:12.5px;font-weight:600;background:hsl(var(--green));color:#fff;display:flex;align-items:center;justify-content:center;gap:5px;transition:filter var(--dur)}
+.btn-add:hover{filter:brightness(1.06)}
+.btn-add:active{transform:scale(.97)}
+.qty-stepper{margin-top:10px;display:flex;align-items:center;justify-content:space-between;background:hsl(var(--paper-mid));border:1px solid hsl(var(--paper-line));border-radius:8px}
+.qty-stepper button{border:none;background:none;padding:7px 10px;display:flex;color:hsl(var(--ink))}
+.qty-stepper button:disabled{opacity:.3}
+.qty-stepper span{font-family:'Space Mono',monospace;font-weight:700;font-size:13px}
+
+/* ---------- Empty states ---------- */
+.empty-state{padding:56px 28px;text-align:center;color:hsl(var(--ink-soft));display:flex;flex-direction:column;align-items:center;gap:10px}
+.empty-state .icon{width:34px;height:34px;opacity:.4}
+.empty-state p{font-size:13.5px;margin:0;line-height:1.5}
+.btn-primary{border:none;border-radius:999px;padding:10px 22px;font-size:13.5px;font-weight:600;background:hsl(var(--red));color:#fff;transition:filter var(--dur)}
+.btn-primary:hover{filter:brightness(1.08)}
+.btn-primary:active{transform:scale(.96)}
+
+/* ---------- Hero / beranda ---------- */
+.hero-card{margin:14px 16px 0;border-radius:var(--r-lg);overflow:hidden;box-shadow:var(--shadow-sm)}
+.hero-card .chalkboard{border-radius:0;padding:20px 18px}
+.store-name{font-family:'Caveat',cursive;font-size:32px;line-height:1}
+.store-tagline{font-size:13px;color:rgba(255,255,255,.85);margin-top:4px}
+.hero-meta{display:flex;flex-direction:column;gap:6px;margin-top:14px;font-size:12px}
+.hero-meta-row{display:flex;align-items:center;gap:7px;color:rgba(255,255,255,.92)}
+
+.cat-quicklinks{display:grid;grid-template-columns:repeat(4,1fr);gap:14px 8px;padding:18px 16px 6px}
+.cat-quick{display:flex;flex-direction:column;align-items:center;gap:6px;background:none;border:none;text-align:center}
+.cat-quick .ic-wrap{width:52px;height:52px;border-radius:999px;background:hsl(var(--paper-mid));border:1px solid hsl(var(--paper-line));display:flex;align-items:center;justify-content:center}
+.cat-quick .icon{width:22px;height:22px;color:hsl(var(--green))}
+.cat-quick span{font-size:10.5px;line-height:1.2;color:hsl(var(--ink))}
+
+.catalog-cta{margin:14px 16px 6px;width:calc(100% - 32px);border:none;border-radius:16px;padding:14px 16px;background:hsl(var(--red));color:#fff;display:flex;align-items:center;justify-content:space-between;gap:10px;text-align:left}
+.catalog-cta .icon{width:26px;height:26px;flex:none}
+.catalog-cta .title{font-weight:600;font-size:14px}
+.catalog-cta .sub{font-size:11.5px;color:rgba(255,255,255,.8)}
+.catalog-cta .go{font-size:11.5px;font-weight:700;background:#fff;color:hsl(var(--red));border-radius:999px;padding:5px 12px;flex:none}
+
+.section-head{display:flex;align-items:center;justify-content:space-between;padding:22px 16px 4px}
+.section-head h2{font-family:'Caveat',cursive;font-size:24px;margin:0}
+.section-head .link{font-size:12px;font-weight:600;color:hsl(var(--green));background:none;border:none}
+.h-scroll-cards{display:flex;gap:12px;overflow-x:auto;padding:12px 16px 6px;scrollbar-width:none}
+.h-scroll-cards::-webkit-scrollbar{display:none}
+.h-scroll-cards .price-tag{flex:none;width:132px}
+
+/* ---------- Pesanan / list cards ---------- */
+.order-card{background:hsl(var(--card));border:1px solid hsl(var(--paper-line));border-radius:14px;padding:14px 16px;margin-bottom:10px;text-align:left;width:100%}
+.order-card-top{display:flex;align-items:center;justify-content:space-between}
+.order-status{font-size:10.5px;font-weight:700;border-radius:999px;padding:3px 9px;border:1px solid hsl(var(--gold));color:hsl(var(--gold-ink));background:hsl(var(--gold)/.18)}
+.order-meta{font-size:11.5px;color:hsl(var(--ink-soft));margin-top:5px}
+.order-total{font-family:'Space Mono',monospace;font-weight:700;color:hsl(var(--red));margin-top:5px}
+.order-items{font-size:11px;color:hsl(var(--ink-soft));margin-top:6px;line-height:1.5}
+.order-status[data-belum-bayar="true"]{border-color:hsl(var(--red));color:hsl(var(--red));background:hsl(var(--red)/.1)}
+/* BARU - tombol "Batalkan Pesanan": kartu jadi div pembungkus, bagian yang bisa
+   diklik buat buka struk pindah ke button terpisah di dalamnya (button di dalam
+   button itu HTML tidak valid) - lihat tabPesanan(). */
+.order-card-open{background:none;border:none;padding:0;margin:0;width:100%;text-align:left;display:block}
+.order-cancel-btn{width:100%;margin-top:10px;border-radius:10px;padding:9px;font-size:12.5px;font-weight:600;background:none}
+
+/* ---------- Akun / bantuan ---------- */
+.info-card{background:hsl(var(--card));border:1px solid hsl(var(--paper-line));border-radius:14px;padding:16px;margin:14px 16px 0}
+.info-row{display:flex;align-items:flex-start;gap:10px;font-size:13px;padding:8px 0}
+.info-row .icon{width:16px;height:16px;flex:none;margin-top:2px;color:hsl(var(--green))}
+.info-row strong{display:block;font-size:12px;color:hsl(var(--ink-soft));font-weight:600;margin-bottom:1px}
+.wa-btn{margin-top:10px;width:100%;border:none;border-radius:12px;padding:12px;background:hsl(var(--green));color:#fff;font-weight:600;font-size:13.5px;display:flex;align-items:center;justify-content:center;gap:8px}
+.faq-list{margin:14px 16px 24px;border:1px solid hsl(var(--paper-line));border-radius:14px;overflow:hidden;background:hsl(var(--card))}
+.faq-item{border-bottom:1px solid hsl(var(--paper-line))}
+.faq-item:last-child{border-bottom:none}
+.faq-q{width:100%;background:none;border:none;padding:13px 16px;display:flex;align-items:center;justify-content:space-between;font-size:13px;font-weight:600;text-align:left;color:hsl(var(--ink))}
+.faq-q .icon{transition:transform var(--dur);color:hsl(var(--ink-soft))}
+.faq-item[data-open="true"] .faq-q .icon{transform:rotate(180deg)}
+.faq-a{padding:0 16px 14px;font-size:12.5px;color:hsl(var(--ink-soft));line-height:1.6}
+
+/* ---------- Legal (Syarat & Ketentuan / Kebijakan Refund) ---------- */
+.akun-menu{background:hsl(var(--card));border:1px solid hsl(var(--paper-line));border-radius:14px;margin:14px 16px 0;overflow:hidden}
+.akun-menu-btn{width:100%;display:flex;align-items:center;gap:10px;padding:13px 14px;border:none;background:none;font-size:13px;font-weight:500;color:hsl(var(--ink));text-align:left;border-bottom:1px solid hsl(var(--paper-line))}
+.akun-menu-btn:last-child{border-bottom:none}
+.akun-menu-btn .chev{margin-left:auto;color:hsl(var(--ink-soft))}
+.legal-text{font-size:12.5px;line-height:1.7;color:hsl(var(--ink-soft))}
+.legal-text h3{font-size:13px;color:hsl(var(--ink));margin:16px 0 6px}
+.legal-text h3:first-child{margin-top:0}
+.legal-text ul,.legal-text ol{margin:4px 0;padding-left:18px}
+.legal-text li{margin:3px 0}
+.legal-text .legal-updated{font-size:11px;color:hsl(var(--ink-soft));margin-bottom:10px}
+
+/* #tab-content butuh jarak bawah karena bottom-nav (dan mini-cart) sekarang
+   position:fixed - tidak lagi makan ruang di alur dokumen seperti sticky dulu. */
+#tab-content{padding-bottom:76px}
+#tab-content.has-mini-cart{padding-bottom:142px}
+
+/* ---------- Bottom nav ---------- */
+.bottom-nav{position:fixed;left:50%;bottom:0;transform:translateX(-50%);width:100%;max-width:460px;z-index:20;background:hsl(var(--card));border-top:1px solid hsl(var(--paper-line));display:flex;padding:6px 4px}
+.nav-btn{flex:1;border:none;background:none;display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 0;color:hsl(var(--ink-soft))}
+.nav-btn .icon{width:19px;height:19px}
+.nav-btn span{font-size:10px}
+.nav-btn[data-active="true"]{color:hsl(var(--red))}
+.nav-btn[data-active="true"] span{font-weight:600}
+
+/* ---------- Mini cart bar ---------- */
+.mini-cart{position:fixed;left:50%;bottom:68px;transform:translateX(-50%);width:calc(100% - 32px);max-width:428px;z-index:19;margin:0;border-radius:999px;background:hsl(var(--ink));color:#fff;padding:12px 18px;display:flex;align-items:center;justify-content:space-between;box-shadow:var(--shadow-md)}
+.mini-cart .left{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:500}
+.mini-cart .total{font-family:'Space Mono',monospace;font-weight:700;color:hsl(var(--gold))}
+
+/* ---------- Overlays: cart sheet / dialogs ---------- */
+.overlay{position:fixed;inset:0;z-index:50;display:none}
+.overlay[data-open="true"]{display:block}
+.overlay-backdrop{position:absolute;inset:0;background:rgba(20,12,6,.45);opacity:0;transition:opacity var(--dur)}
+.overlay[data-open="true"] .overlay-backdrop{opacity:1}
+
+.sheet{position:absolute;left:50%;bottom:0;transform:translate(-50%,100%);width:100%;max-width:460px;max-height:82vh;background:hsl(var(--receipt));border-radius:22px 22px 0 0;display:flex;flex-direction:column;transition:transform var(--dur) ease-out}
+.overlay[data-open="true"] .sheet{transform:translate(-50%,0)}
+.sheet-handle{width:36px;height:4px;border-radius:999px;background:hsl(var(--paper-line));margin:10px auto 2px}
+.sheet-head{display:flex;align-items:center;justify-content:space-between;padding:8px 18px 4px}
+.sheet-head h2{font-family:'Caveat',cursive;font-size:26px;margin:0}
+.sheet-body{overflow-y:auto;padding:4px 18px 18px;flex:1}
+.close-x{border:none;background:hsl(var(--paper-mid));width:30px;height:30px;border-radius:999px;display:flex;align-items:center;justify-content:center;color:hsl(var(--ink))}
+
+.cart-line{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;padding:12px 0;border-bottom:1px dashed hsl(var(--paper-line))}
+.cart-line:first-child{padding-top:4px}
+.cart-line-name{font-size:13px;font-weight:600;display:flex;align-items:center;gap:6px}
+.cart-line-sub{font-size:11.5px;color:hsl(var(--ink-soft));margin-top:2px;font-family:'Space Mono',monospace}
+.cart-line-total{font-family:'Space Mono',monospace;font-weight:700;color:hsl(var(--red));white-space:nowrap;font-size:13px}
+.cart-summary{border-top:1px dashed hsl(var(--paper-line));margin-top:6px;padding-top:14px;font-family:'Space Mono',monospace}
+.cart-summary-row{display:flex;justify-content:space-between;align-items:center;font-weight:700;font-size:16px;margin-bottom:12px}
+.cart-summary-row .val{color:hsl(var(--red))}
+
+.dialog{position:absolute;left:50%;top:50%;transform:translate(-50%,-46%) scale(.97);width:calc(100% - 32px);max-width:420px;max-height:86vh;overflow-y:auto;background:hsl(var(--card));border-radius:var(--r-lg);padding:20px;opacity:0;transition:transform var(--dur) ease-out,opacity var(--dur) ease-out}
+.overlay[data-open="true"] .dialog{transform:translate(-50%,-50%) scale(1);opacity:1}
+.dialog h2{font-family:'Caveat',cursive;font-size:26px;margin:0 0 14px}
+
+.method-toggle{display:flex;gap:8px;margin-bottom:14px}
+.method-btn{flex:1;border:1px solid hsl(var(--paper-line));border-radius:10px;padding:11px 8px;font-size:13px;display:flex;align-items:center;justify-content:center;gap:7px;background:hsl(var(--card));color:hsl(var(--ink))}
+.method-btn[data-active="true"]{border-color:hsl(var(--green));background:hsl(var(--green)/.1);font-weight:600;color:hsl(var(--green))}
+
+.field-label-plain{font-size:12px;font-weight:600;color:hsl(var(--ink-soft));margin-bottom:5px}
+.qris-box{border:1px solid hsl(var(--paper-line));border-radius:12px;padding:14px;margin-bottom:14px;text-align:center;background:hsl(var(--card))}
+.qris-box img{width:180px;height:180px;object-fit:contain;border-radius:8px;margin:0 auto 10px;display:block;background:#fff}
+.qris-total{font-family:'Space Mono',monospace;font-weight:700;font-size:16px;margin-bottom:6px}
+.qris-note{font-size:11.5px;color:hsl(var(--ink-soft));line-height:1.6}
+.qris-missing{font-size:12px;color:hsl(var(--red));line-height:1.6}
+
+.field{margin-bottom:12px}
+.field label{display:block;font-size:12px;font-weight:600;color:hsl(var(--ink-soft));margin-bottom:5px}
+.field input,.field textarea{width:100%;border:1px solid hsl(var(--paper-line));border-radius:10px;padding:10px 12px;font-size:13.5px;outline:none;background:hsl(var(--paper)/.4);resize:none;color:hsl(var(--ink))}
+.field input:focus,.field textarea:focus{border-color:hsl(var(--green))}
+
+.checkout-summary{display:flex;justify-content:space-between;align-items:center;border-top:1px dashed hsl(var(--paper-line));padding-top:12px;margin-top:4px;font-family:'Space Mono',monospace}
+.checkout-summary .val{font-weight:700;font-size:17px;color:hsl(var(--red))}
+.submit-btn{width:100%;margin-top:14px;border:none;border-radius:12px;padding:13px;background:hsl(var(--gold));color:hsl(var(--gold-ink));font-weight:700;font-size:14px}
+.submit-btn:disabled{opacity:.45;cursor:not-allowed}
+.submit-hint{font-size:11px;color:hsl(var(--ink-soft));text-align:center;margin-top:8px;line-height:1.5}
+
+/* ---------- Receipt (struk) ---------- */
+.receipt-dialog{background:transparent;box-shadow:none;padding:0;max-width:300px}
+.receipt-edge{width:100%;height:10px;background:linear-gradient(-45deg,hsl(var(--receipt)) 6px,transparent 0),linear-gradient(45deg,hsl(var(--receipt)) 6px,transparent 0);background-repeat:repeat-x;background-size:12px 12px}
+.receipt-edge.bottom{transform:rotate(180deg)}
+.receipt-body{background:hsl(var(--receipt));padding:26px 22px;text-align:center;font-family:'Space Mono',monospace;position:relative}
+.receipt-body .close-x{position:absolute;top:10px;right:10px}
+.receipt-eyebrow{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:hsl(var(--ink-soft))}
+.receipt-msg{font-size:13px;margin:8px 0}
+.receipt-num{font-size:24px;font-weight:700;color:hsl(var(--green))}
+.receipt-div{border-top:1px dashed hsl(var(--paper-line));margin:14px 0}
+.receipt-detail{text-align:left;font-size:11.5px;line-height:1.9}
+.receipt-items{text-align:left;font-size:11px;line-height:1.7;max-height:140px;overflow-y:auto}
+.receipt-note{font-size:10.5px;color:hsl(var(--ink-soft));line-height:1.6}
+
+/* ---------- Akun member / login-daftar ---------- */
+.account-card{background:hsl(var(--card));border:1px solid hsl(var(--paper-line));border-radius:14px;padding:16px;margin:14px 16px 0}
+.account-card .who{display:flex;align-items:center;gap:12px}
+.account-avatar{width:44px;height:44px;border-radius:999px;background:hsl(var(--green)/.15);color:hsl(var(--green));display:flex;align-items:center;justify-content:center;flex:none}
+.account-avatar .icon{width:22px;height:22px}
+.account-name{font-weight:700;font-size:14.5px}
+.account-sub{font-size:11.5px;color:hsl(var(--ink-soft));margin-top:1px}
+.account-guest-note{font-size:12.5px;color:hsl(var(--ink-soft));line-height:1.55;margin-top:2px}
+.retention-notice{font-size:12.5px;color:hsl(var(--ink));line-height:1.5;border:1px solid hsl(var(--green));background:hsl(var(--green)/.07);border-radius:12px;padding:11px 14px;margin-bottom:12px}
+.qris-timer{font-family:'Space Mono',monospace;font-size:13px;font-weight:700;color:hsl(var(--green));background:hsl(var(--green)/.1);border-radius:999px;padding:5px 14px;display:inline-block;margin-bottom:10px}
+.qris-timer[data-expired="true"]{color:hsl(var(--red));background:hsl(var(--red)/.1)}
+.btn-outline{border:1px solid hsl(var(--paper-line));border-radius:10px;padding:9px 14px;font-size:12.5px;font-weight:600;background:hsl(var(--card));color:hsl(var(--ink))}
+.btn-outline.danger{border-color:hsl(var(--red));color:hsl(var(--red))}
+.account-actions{display:flex;gap:8px;margin-top:12px}
+.account-actions .btn-primary,.account-actions .btn-outline{flex:1;padding:10px 8px;text-align:center}
+
+.auth-tabs{display:flex;gap:8px;margin-bottom:14px}
+.auth-tab{flex:1;border:1px solid hsl(var(--paper-line));border-radius:10px;padding:9px 8px;font-size:12.5px;font-weight:600;background:hsl(var(--card));color:hsl(var(--ink-soft))}
+.auth-tab[data-active="true"]{border-color:hsl(var(--red));background:hsl(var(--red)/.08);color:hsl(var(--red))}
+.auth-hint{font-size:11.5px;color:hsl(var(--ink-soft));line-height:1.6;margin:-2px 0 12px}
+.auth-error{color:hsl(var(--red));font-size:12.5px;margin:-2px 0 10px;text-align:center}
+.link-btn{border:none;background:none;color:hsl(var(--green));font-weight:600;font-size:12.5px;padding:0}
+.guest-link-row{text-align:center;margin-top:14px;font-size:12.5px;color:hsl(var(--ink-soft))}
+
+/* ---------- Admin (Nama Toko & No. WA) ---------- */
+.admin-entry-row{text-align:center;padding:20px 16px 30px}
+.admin-entry-row .link-btn{color:hsl(var(--ink-soft));font-weight:500}
+.admin-note{font-size:11.5px;color:hsl(var(--ink-soft));line-height:1.6;margin:-2px 0 12px}
+.admin-logo-row{display:flex;align-items:center;gap:12px}
+.admin-logo-preview{width:56px;height:56px;border-radius:999px;background:hsl(var(--gold));color:hsl(var(--gold-ink));display:flex;align-items:center;justify-content:center;font-family:'Caveat',cursive;font-weight:700;font-size:26px;overflow:hidden;flex:none;border:1px solid hsl(var(--paper-line))}
+.admin-logo-preview img{width:100%;height:100%;object-fit:cover}
+.admin-logo-actions{display:flex;flex-direction:column;align-items:flex-start;gap:6px}
+.admin-logo-upload{display:inline-block;cursor:pointer}
+.toast{position:fixed;left:16px;right:16px;max-width:420px;margin:0 auto;bottom:18px;z-index:80;background:hsl(var(--ink));color:#fff;text-align:center;font-size:12.5px;font-weight:600;padding:12px 16px;border-radius:12px;box-shadow:var(--shadow-md);opacity:0;transform:translateY(10px);pointer-events:none;transition:opacity var(--dur),transform var(--dur)}
+.toast[data-open="true"]{opacity:1;transform:translateY(0)}
+
+.riwayat-toolbar{display:flex;align-items:center;justify-content:space-between;padding:16px 16px 0}
+.riwayat-toolbar h2{margin:0}
+
+/* ---------- Kartu Poin Member (tab Akun) ---------- */
+.poin-card{margin:14px 16px 0;border-radius:var(--r-lg);overflow:hidden;box-shadow:var(--shadow-sm);background:hsl(var(--card))}
+.poin-card-plain{border:1px solid hsl(var(--paper-line));padding:16px}
+.poin-hero{background:linear-gradient(135deg, hsl(var(--red)), hsl(0 65% 34%));color:#fff;padding:18px 18px 22px}
+.poin-hi{font-size:15px}
+.poin-hi strong{font-family:'Caveat',cursive;font-size:22px;font-weight:700;margin-left:2px}
+.poin-tier-badge{display:inline-flex;align-items:center;gap:5px;margin-top:8px;background:rgba(255,255,255,.16);border-radius:999px;padding:4px 12px 4px 8px;font-size:11.5px;font-weight:700;letter-spacing:.02em}
+.poin-tier-badge .icon{width:14px;height:14px;color:hsl(var(--gold))}
+.poin-stats{display:flex;align-items:center;background:hsl(var(--card));margin:-14px 12px 0;border-radius:16px;box-shadow:var(--shadow-md);padding:14px 8px;position:relative}
+.poin-stat{flex:1;text-align:center;padding:0 6px}
+.poin-stat-num{display:flex;align-items:center;justify-content:center;gap:5px;font-weight:700;font-size:19px;color:hsl(var(--ink))}
+.poin-stat-num .icon{width:18px;height:18px;color:hsl(var(--gold-ink))}
+.poin-stat-label{font-size:11px;color:hsl(var(--ink-soft));margin-top:2px}
+.poin-stat-divider{width:1px;align-self:stretch;background:hsl(var(--paper-line))}
+.poin-barcode-btn{display:flex;align-items:center;justify-content:center;gap:8px;width:calc(100% - 32px);margin:14px 16px 16px;border:1px dashed hsl(var(--paper-line));border-radius:12px;padding:11px;font-size:12.5px;font-weight:700;background:hsl(var(--paper-mid));color:hsl(var(--ink))}
+.poin-barcode-btn .icon{width:16px;height:16px}
+.poin-card-loading{display:flex;align-items:center;justify-content:center;gap:8px;padding:22px;color:hsl(var(--ink-soft));font-size:12.5px}
+.poin-card-loading .icon{width:18px;height:18px}
+.poin-error{font-size:12.5px;color:hsl(var(--red));line-height:1.6}
+</style>
+<!-- BARU (integrasi QRIS ASLI via iPaymu) - iPaymu API Direct cuma balikin payload EMV
+     mentah (bukan gambar QR siap pakai kayak Midtrans dulu), jadi gambar QR dirender
+     sendiri di browser dari string itu - lihat renderQrisCanvas_ & qris-canvas di bawah. -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+</head>
+<body>
+<div id="app" class="app"></div>
+
+<script>
+/* ================================================================
+   DATA TOKO — GANTI SEMUA BAGIAN INI DENGAN DATA A'INI MART ASLI
+   ================================================================
+   Katalog sengaja dikosongkan (tanpa data contoh/dummy). Tambahkan
+   produk asli toko ke array PRODUCTS di bawah, ikuti bentuk contoh
+   pada komentar. Kategori & menu cepat di beranda akan otomatis
+   muncul begitu ada produk dengan kategori tersebut. */
+
+const STORE = {
+  nama: "A'ini Mart",
+  tagline: "Belanja kebutuhan harian, tinggal pesan online.",
+  whatsapp: "6281234567890",      // ganti nomor WA toko (format 62xxxxxxxxxx, tanpa spasi/strip)
+  alamat: "Isi alamat toko di sini",
+  jamBuka: "07:00",
+  jamTutup: "21:00",
+  metodePembayaran: [],            // contoh: ["Tunai di tempat","Transfer Bank","QRIS"]
+  // BARU: link gambar kode QRIS statis toko (upload ke Drive lalu "Get link" -> ubah
+  // jadi format https://drive.google.com/uc?export=view&id=FILE_ID, atau host di mana
+  // saja asal link gambar langsung/.png/.jpg). Dikosongkan = opsi QRIS tetap muncul
+  // tapi kasih tau customer belum diatur, arahkan pilih Bayar di Tempat.
+  qrisImageUrl: "",
+  logo: ""   // base64 data URI logo toko. Kosong = fallback huruf pertama nama toko.
+};
+
+/* ================================================================
+   ADMIN — ubah Nama Toko, Alamat & Nomor WhatsApp lewat menu di dalam app
+   ================================================================
+   Nilai default di atas (STORE.nama / STORE.whatsapp) cuma fallback SAAT
+   PERTAMA KALI app dibuka, sebelum sempat kontak server (atau kalau server
+   lagi gak bisa dihubungi). Begitu admin simpan lewat menu "Pengaturan
+   Toko (Admin)" di tab Akun, nilai baru DIKIRIM & DISIMPAN DI SERVER (lewat
+   action 'updatePengaturanToko') - jadi HP/laptop lain yang buka link yang
+   sama otomatis kebaca nilai terbaru pas mereka load app (loadPengaturanToko()),
+   bukan cuma tersimpan di 1 device kayak versi localStorage sebelumnya.
+
+   PIN di bawah ini cuma gerbang cepat sisi client (kode sumbernya tetap
+   kebaca lewat "view source" siapa pun, jadi BUKAN proteksi sungguhan) -
+   validasi PIN yang sebenarnya (menentukan boleh/gaknya simpan) dilakukan
+   ULANG di server saat updatePengaturanToko dipanggil. Ganti PIN di sini
+   DAN di server (lihat catatan Apps Script) - dua-duanya, bukan cuma salah
+   satu. */
+const ADMIN_PIN = '190625';
+
+/** Katalog TIDAK LAGI hardcode di sini — diambil live dari backend ERP
+ * (apiKatalogProdukPublik) supaya stok & harga selalu sinkron sama toko.
+ * PRODUCTS diisi async saat load, lihat loadKatalog() di bagian BACKEND. */
+let PRODUCTS = [];
+
+/* Promo banner beranda — kosongkan jika belum ada promo berjalan. */
+const PROMOS = [];
+/* contoh isi: { judul:"GRATIS ONGKIR", sub:"Belanja tanpa syarat, diantar tanpa biaya", periode:"Berlaku tiap hari" } */
+
+/* ================================================================
+   BACKEND — koneksi ke Anini Retail ERP (Google Apps Script doPost)
+   ================================================================ */
+const BACKEND_URL = 'https://script.google.com/macros/s/AKfycbxlyManslLRkZdiuxkHGcQCJa3Efpgqc_Zn1vFfdPqtmkzRFOvoby8hcGOB4LfHQjGK/exec';
+
+async function api(action, params) {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(function () { controller.abort(); }, 25000);
+  let res;
+  try {
+    res = await fetch(BACKEND_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // hindari CORS preflight (GAS doPost tidak menangani OPTIONS)
+      body: JSON.stringify({ action: action, params: params || {} }),
+      signal: controller.signal
+    });
+  } catch (e) {
+    if (e.name === 'AbortError') throw new Error('Server tidak merespon (timeout). Coba lagi.');
+    throw new Error('Gagal terhubung ke server. Cek koneksi internet kamu.');
+  } finally {
+    clearTimeout(timeoutId);
+  }
+  let json;
+  try { json = await res.json(); }
+  catch (e) { throw new Error('Server mengembalikan respon tidak valid.'); }
+  if (!json.success) throw new Error(json.message || 'Terjadi kesalahan pada server.');
+  return json.data;
+}
+
+/**
+ * Ubah bentuk produk dari backend (apiKatalogProdukPublik: Id/Nama/HargaJual/
+ * Stok/KategoriNama/Satuan/Foto) ke bentuk yang dipakai render di file ini.
+ * @param {Object} p
+ */
+function mapProdukPublik(p) {
+  return {
+    id: p.Id,
+    nama: p.Nama,
+    kategori: p.KategoriNama || 'Lainnya',
+    harga: Number(p.HargaJual) || 0,
+    satuan: p.Satuan || '',
+    stok: Number(p.Stok) || 0,
+    emoji: '🛒',
+    gambar: p.Foto || null,
+    diskonPersen: 0,
+    unggulan: false
+  };
+}
+
+/**
+ * Load katalog produk publik dari backend. Dipanggil sekali saat init, dan
+ * boleh dipanggil ulang manual (retry) kalau gagal.
+ */
+async function loadKatalog() {
+  state.katalogLoading = true;
+  state.katalogError = null;
+  renderTabContent();
+  try {
+    const data = await api('apiKatalogProdukPublik', {});
+    PRODUCTS = (data || []).map(mapProdukPublik);
+    state.katalogLoading = false;
+  } catch (e) {
+    state.katalogLoading = false;
+    state.katalogError = e.message || 'Gagal memuat katalog produk.';
+  }
+  updateStatusPill();
+  renderTabContent();
+  renderMiniCart();
+}
+
+/**
+ * Terapkan STORE.nama/logo/whatsapp terbaru ke elemen header yang sudah
+ * ada di DOM, tanpa render ulang seluruh shell (biar dialog/tab yang lagi
+ * kebuka gak keganggu). Dipanggil setelah loadPengaturanToko() sukses, dan
+ * juga dipanggil ulang oleh submitAdminSave() begitu simpan berhasil.
+ */
+function applyStoreBranding(){
+  const mark = document.getElementById('store-mark');
+  if(mark) mark.innerHTML = STORE.logo ? '<img src="'+esc(STORE.logo)+'" alt="'+esc(STORE.nama)+'">' : esc(STORE.nama.charAt(0));
+  const nameEl = document.getElementById('store-name');
+  if(nameEl) nameEl.textContent = STORE.nama;
+  const waLink = document.getElementById('wa-link');
+  if(waLink) waLink.href = 'https://wa.me/'+STORE.whatsapp+'?text='+encodeURIComponent('Halo '+STORE.nama+', saya mau tanya-tanya.');
+  updateStatusPill();
+  renderTabContent(); // tab Akun/Beranda nampilin alamat & FAQ metode bayar yang baca STORE juga
+}
+
+/**
+ * Ambil pengaturan toko TERBARU dari server (Sheet/Properties di Apps
+ * Script - lihat action 'pengaturanTokoPublik'). Dipanggil sekali tiap app
+ * dibuka, SETELAH renderShell() supaya user tetap lihat sesuatu (nilai
+ * default/cache) duluan sebelum data server sampai - baru begitu server
+ * jawab, header ditimpa ke nilai terkini. Kalau server gak bisa dihubungi
+ * (offline dsb), app tetap jalan pakai nilai default di STORE, gak nge-block.
+ */
+async function loadPengaturanToko(){
+  try{
+    const s = await api('pengaturanTokoPublik', {});
+    if(!s) return;
+    if(s.nama) STORE.nama = s.nama;
+    if(s.whatsapp) STORE.whatsapp = s.whatsapp;
+    if(s.alamat) STORE.alamat = s.alamat;
+    STORE.logo = s.logo || ''; // logo boleh kosong (admin hapus logo) beda dari "belum ada data"
+    applyStoreBranding();
+  }catch(e){
+    console.warn('Gagal muat pengaturan toko dari server, pakai nilai default:', e.message);
+  }
+}
+
+
+/* ================================================================
+   IKON — kumpulan SVG ringan (tanpa dependensi luar)
+   ================================================================ */
+const ICONS = {
+  search:'<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>',
+  x:'<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
+  basket:'<path d="m15 11-1 9"/><path d="m19 11-4-7"/><path d="M2 11h20"/><path d="m3.5 11 1.6 7.4a2 2 0 0 0 2 1.6h9.8a2 2 0 0 0 2-1.6l1.7-7.4"/><path d="M4.5 15.5h15"/><path d="m5 11 4-7"/><path d="m9 11 1 9"/>',
+  plus:'<path d="M5 12h14"/><path d="M12 5v14"/>',
+  minus:'<path d="M5 12h14"/>',
+  mappin:'<path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/>',
+  whatsapp:'<path d="M2.992 16.342a2 2 0 0 1 .094 1.167l-1.065 3.29a1 1 0 0 0 1.236 1.168l3.413-.998a2 2 0 0 1 1.099.092 10 10 0 1 0-4.777-4.719"/>',
+  house:'<path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8"/><path d="M3 10a2 2 0 0 1 .709-1.528l7-6a2 2 0 0 1 2.582 0l7 6A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>',
+  bag:'<path d="M16 10a4 4 0 0 1-8 0"/><path d="M3.103 6.034h17.794"/><path d="M3.4 5.467a2 2 0 0 0-.4 1.2V20a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6.667a2 2 0 0 0-.4-1.2l-2-2.667A2 2 0 0 0 17 2H7a2 2 0 0 0-1.6.8z"/>',
+  percent:'<line x1="19" x2="5" y1="5" y2="19"/><circle cx="6.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/>',
+  packageCheck:'<path d="M12 22V12"/><path d="m16 17 2 2 4-4"/><path d="M21 11.127V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.729l7 4a2 2 0 0 0 2 .001l1.32-.753"/><path d="M3.29 7 12 12l8.71-5"/><path d="m7.5 4.27 8.997 5.148"/>',
+  user:'<path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>',
+  store:'<path d="M15 21v-5a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v5"/><path d="M17.774 10.31a1.12 1.12 0 0 0-1.549 0 2.5 2.5 0 0 1-3.451 0 1.12 1.12 0 0 0-1.548 0 2.5 2.5 0 0 1-3.452 0 1.12 1.12 0 0 0-1.549 0 2.5 2.5 0 0 1-3.77-3.248l2.889-4.184A2 2 0 0 1 7 2h10a2 2 0 0 1 1.653.873l2.895 4.192a2.5 2.5 0 0 1-3.774 3.244"/><path d="M4 10.95V19a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8.05"/>',
+  truck:'<path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2"/><path d="M15 18H9"/><path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 17.52 8H14"/><circle cx="17" cy="18" r="2"/><circle cx="7" cy="18" r="2"/>',
+  ticket:'<path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/><path d="M13 5v2"/><path d="M13 17v2"/><path d="M13 11v2"/>',
+  leaf:'<path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"/><path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"/>',
+  clock:'<circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>',
+  chevronDown:'<path d="m6 9 6 6 6-6"/>',
+  chevronRight:'<path d="m9 18 6-6-6-6"/>',
+  tag:'<path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z"/><circle cx="7.5" cy="7.5" r=".5" fill="currentColor"/>',
+  boxEmpty:'<path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="M3.3 7 12 12l8.7-5"/><path d="M12 22V12"/>',
+  qrcode:'<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3z"/><path d="M14 21h3"/><path d="M21 14v3"/><path d="M21 21h.01"/>',
+  download:'<path d="M12 15V3"/><path d="M6 15v4a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2v-4"/><path d="m6 10 6 5 6-5"/>',
+  bank:'<path d="M3 22h18"/><path d="M6 18v-7"/><path d="M10 18v-7"/><path d="M14 18v-7"/><path d="M18 18v-7"/><path d="M2 11h20L12 3z"/>',
+  coin:'<circle cx="12" cy="12" r="8"/><path d="M9.5 9a2.5 2 0 0 1 5 0c0 1.5-2.5 1.5-2.5 3"/><path d="M12 15h.01"/>',
+  crown:'<path d="m2 4 3 12h14l3-12-6 7-4-7-4 7Z"/><path d="M5 20h14"/>',
+  fileText:'<path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/>'
+};
+function icon(name, cls){
+  return '<svg class="icon '+(cls||'')+'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'+(ICONS[name]||'')+'</svg>';
+}
+
+/* ================================================================
+   HELPER
+   ================================================================ */
+function rupiah(n){ return 'Rp' + Math.round(n).toLocaleString('id-ID'); }
+function hargaAkhir(p){ return p.diskonPersen ? Math.round((p.harga*(100-p.diskonPersen)/100)/100)*100 : p.harga; }
+function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function isStoreOpen(){
+  const now = new Date();
+  const [oh,om] = STORE.jamBuka.split(':').map(Number);
+  const [ch,cm] = STORE.jamTutup.split(':').map(Number);
+  const nowMin = now.getHours()*60+now.getMinutes();
+  return nowMin >= (oh*60+om) && nowMin < (ch*60+cm);
+}
+function categoriesFromProducts(){
+  const set = new Set(PRODUCTS.map(p=>p.kategori));
+  return ['Semua', ...Array.from(set)];
+}
+const CATEGORY_ICONS = {
+  'Sembako':'bag','Produk Segar':'leaf','Minuman':'bag','Snack':'bag',
+  'Bumbu Dapur':'leaf','Perawatan Diri':'tag'
+};
+
+/* ================================================================
+   STATE
+   ================================================================ */
+const state = {
+  tab: 'beranda',
+  category: 'Semua',
+  search: '',
+  cart: {},
+  cartOpen: false,
+  checkoutOpen: false,
+  receiptOrder: null,
+  method: 'ambil',
+  payment: 'cod', // BARU: 'cod' (Bayar di Tempat) | 'qris' | 'va'
+  vaBank: '', // BARU (metode bayar VA) - kode bank dipilih customer, wajib diisi kalau payment==='va'
+  // BARU (fitur Tukar Poin checkout, mirror POSPage_poinDigunakan) - `poinDigunakan`
+  // raw string dari input number (dibiarkan string, sama pola field lain di sini -
+  // divalidasi/di-clamp saat dipakai lewat estimasiPoinDiskon(), bukan saat diketik).
+  form: { nama:'', wa:'', alamat:'', catatan:'', poinDigunakan:'' },
+  orders: [],
+  faqOpen: null,
+  katalogLoading: true,
+  katalogError: null,
+  submitting: false,
+  // BARU (integrasi QRIS ASLI via iPaymu) - handle setInterval polling status bayar
+  // struk yang sedang terbuka, dipakai clearInterval saat struk ditutup/status final.
+  paymentPollInterval: null,
+  qrisCountdownInterval: null,
+
+  // ---- AKUN / LOGIN MEMBER (per-customer) + TAMU ----
+  auth: {
+    status: 'guest',     // 'guest' | 'member'
+    pelanggan: null       // {id, nama, wa} kalau status==='member'
+  },
+  authOpen: false,
+  authMode: 'login',      // 'login' | 'daftar' (daftar muncul otomatis kalau nomor belum jadi member)
+  authForm: { wa:'', pin:'', nama:'' },
+  authError: null,
+  authSubmitting: false,
+  riwayatPelanggan: [],
+  riwayatLoading: false,
+  riwayatError: null,
+
+  // ---- POIN MEMBER (loyalty, Sheet_Member RMS - lihat loadPoinMember()) ----
+  poinMember: null,     // null = belum dimuat | {terdaftar:false} | {terdaftar:true, nomorMember, tier, poin}
+  poinLoading: false,
+  poinError: null,
+
+  // ---- ADMIN (ubah Nama Toko, Alamat & No. WhatsApp) ----
+  adminOpen: false,
+  adminStep: 'pin',        // 'pin' | 'form'
+  adminForm: { pin:'', nama:'', whatsapp:'', alamat:'', logo:'' },
+  adminSaving: false,
+  adminError: null,
+  toast: null
+};
+
+/* Session member disimpan di localStorage supaya login gak hilang tiap buka
+ * app lagi (khas PWA). Cuma nyimpen id/nama/wa - TIDAK pernah simpan PIN di
+ * sisi client. */
+const AUTH_STORAGE_KEY = 'ainiMartMemberSession';
+function saveAuthSession(pelanggan){
+  try{ localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(pelanggan)); }catch(e){}
+}
+function clearAuthSession(){
+  try{ localStorage.removeItem(AUTH_STORAGE_KEY); }catch(e){}
+}
+function loadAuthSession(){
+  try{
+    const raw = localStorage.getItem(AUTH_STORAGE_KEY);
+    if(!raw) return null;
+    const p = JSON.parse(raw);
+    if(p && p.id && p.wa) return p;
+  }catch(e){}
+  return null;
+}
+
+/* Riwayat pesanan Tamu (state.orders) - SEBELUMNYA cuma di memori JS, hilang begitu
+ * app di-reload/ditutup (bug: "hilang pas pesanan udah selesai" - sebenernya hilang
+ * pas reload, ketauannya pas selesai karena butuh waktu sampai situ). Sekarang
+ * dipersist ke localStorage juga (terpisah dari sesi member), maksimal 30 pesanan
+ * terakhir biar gak membengkak. Dipakai baik jalur Tamu maupun member (struk lengkap
+ * termasuk detail item buat re-open receipt, beda dari riwayatPelanggan server yang
+ * cuma ringkasan). */
+const GUEST_ORDERS_STORAGE_KEY = 'ainiMartGuestOrders';
+function saveGuestOrders(){
+  try{ localStorage.setItem(GUEST_ORDERS_STORAGE_KEY, JSON.stringify(state.orders.slice(-30))); }catch(e){}
+}
+function loadGuestOrders(){
+  try{
+    const raw = localStorage.getItem(GUEST_ORDERS_STORAGE_KEY);
+    if(!raw) return [];
+    const arr = JSON.parse(raw);
+    return Array.isArray(arr) ? arr : [];
+  }catch(e){ return []; }
+}
+
+function filteredProducts(){
+  let list = state.category==='Semua' ? PRODUCTS : PRODUCTS.filter(p=>p.kategori===state.category);
+  if(state.search.trim()){
+    const q = state.search.trim().toLowerCase();
+    list = list.filter(p=>p.nama.toLowerCase().includes(q));
+  }
+  return list;
+}
+function cartLines(){
+  return Object.entries(state.cart)
+    .filter(([,qty])=>qty>0)
+    .map(([id,qty])=>({ produk: PRODUCTS.find(p=>p.id===id), qty }))
+    .filter(l=>l.produk);
+}
+function cartCount(){ return cartLines().reduce((s,l)=>s+l.qty,0); }
+function cartTotal(){ return cartLines().reduce((s,l)=>s+l.qty*hargaAkhir(l.produk),0); }
+function changeQty(id, delta){
+  const p = PRODUCTS.find(p=>p.id===id);
+  if(!p) return;
+  const cur = state.cart[id]||0;
+  state.cart[id] = Math.max(0, Math.min(p.stok, cur+delta));
+  refresh();
+}
+
+/* ================================================================
+   RENDER — kerangka aplikasi (dibangun sekali)
+   ================================================================ */
+function renderShell(){
+  const app = document.getElementById('app');
+  app.innerHTML = `
+    <header class="chalkboard">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
+        <div style="display:flex;align-items:center;gap:10px;min-width:0">
+          <div class="store-mark" id="store-mark">${STORE.logo ? '<img src="'+STORE.logo+'" alt="'+esc(STORE.nama)+'">' : esc(STORE.nama.charAt(0))}</div>
+          <div style="min-width:0">
+            <div class="font-chalk" id="store-name" style="font-size:22px;line-height:1">${esc(STORE.nama)}</div>
+            <span class="status-pill" id="status-pill"></span>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;flex:none">
+          <a class="icon-btn" id="wa-link" href="#" target="_blank" rel="noopener" aria-label="Hubungi via WhatsApp">${icon('whatsapp')}</a>
+          <button class="icon-btn" data-action="open-cart" aria-label="Buka keranjang">
+            ${icon('basket')}
+            <span class="badge-count" id="cart-badge" style="display:none">0</span>
+          </button>
+        </div>
+      </div>
+      <div class="search-row">
+        ${icon('search')}
+        <input id="search-input" type="text" placeholder="Cari produk, mis. beras, minyak..." autocomplete="off">
+        <button class="search-clear" id="search-clear" data-action="clear-search" style="display:none" aria-label="Hapus pencarian">${icon('x')}</button>
+      </div>
+    </header>
+
+    <main id="tab-content"></main>
+    <div id="mini-cart-mount"></div>
+
+    <nav class="bottom-nav">
+      <button class="nav-btn" data-action="set-tab" data-tab="beranda">${icon('house')}<span>Beranda</span></button>
+      <button class="nav-btn" data-action="set-tab" data-tab="belanja">${icon('bag')}<span>Belanja</span></button>
+      <button class="nav-btn" data-action="set-tab" data-tab="promo">${icon('percent')}<span>Promo</span></button>
+      <button class="nav-btn" data-action="set-tab" data-tab="pesanan">${icon('packageCheck')}<span>Pesanan</span></button>
+      <button class="nav-btn" data-action="set-tab" data-tab="akun">${icon('user')}<span>Akun</span></button>
+    </nav>
+
+    <div class="overlay" id="cart-overlay">
+      <div class="overlay-backdrop" data-action="close-cart"></div>
+      <div class="sheet">
+        <div class="sheet-handle"></div>
+        <div class="sheet-head"><h2>Keranjang</h2><button class="close-x" data-action="close-cart" aria-label="Tutup">${icon('x')}</button></div>
+        <div class="sheet-body" id="cart-body"></div>
+      </div>
+    </div>
+
+    <div class="overlay" id="checkout-overlay">
+      <div class="overlay-backdrop" data-action="close-checkout"></div>
+      <div class="dialog" id="checkout-body"></div>
+    </div>
+
+    <div class="overlay" id="receipt-overlay">
+      <div class="overlay-backdrop" data-action="close-receipt"></div>
+      <div class="dialog receipt-dialog" id="receipt-body"></div>
+    </div>
+
+    <div class="overlay" id="auth-overlay">
+      <div class="overlay-backdrop" data-action="close-auth"></div>
+      <div class="dialog" id="auth-body"></div>
+    </div>
+
+    <div class="overlay" id="admin-overlay">
+      <div class="overlay-backdrop" data-action="close-admin"></div>
+      <div class="dialog" id="admin-body"></div>
+    </div>
+
+    <div class="overlay" id="member-barcode-overlay">
+      <div class="overlay-backdrop" data-action="close-member-barcode"></div>
+      <div class="dialog" id="member-barcode-body"></div>
+    </div>
+
+    <div class="overlay" id="legal-overlay">
+      <div class="overlay-backdrop" data-action="close-legal"></div>
+      <div class="dialog" id="legal-body"></div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+  `;
+
+  document.getElementById('wa-link').href = 'https://wa.me/'+STORE.whatsapp+'?text='+encodeURIComponent('Halo '+STORE.nama+', saya mau tanya-tanya.');
+
+  const searchInput = document.getElementById('search-input');
+  searchInput.addEventListener('input', e=>{
+    state.search = e.target.value;
+    document.getElementById('search-clear').style.display = state.search ? 'flex' : 'none';
+    if(state.search && state.tab!=='belanja'){ state.tab='belanja'; }
+    renderTabContent(); updateNavActive();
+  });
+
+  updateStatusPill();
+  renderTabContent();
+  updateNavActive();
+  updateCartBadge();
+  renderMiniCart();
+}
+
+function updateStatusPill(){
+  const open = isStoreOpen();
+  document.getElementById('status-pill').innerHTML =
+    '<span class="dot" style="background:'+(open?'#4ade80':'#fca5a5')+'"></span>'+
+    (open ? 'Buka sekarang' : 'Tutup') + ' · '+STORE.jamBuka+'–'+STORE.jamTutup;
+}
+
+function updateNavActive(){
+  document.querySelectorAll('.nav-btn').forEach(b=>{
+    b.setAttribute('data-active', b.dataset.tab===state.tab ? 'true':'false');
+  });
+}
+function updateCartBadge(){
+  const n = cartCount();
+  const badge = document.getElementById('cart-badge');
+  badge.textContent = n;
+  badge.style.display = n>0 ? 'flex' : 'none';
+}
+function renderMiniCart(){
+  const mount = document.getElementById('mini-cart-mount');
+  const tabContent = document.getElementById('tab-content');
+  const n = cartCount();
+  const show = n>0 && (state.tab==='belanja' || state.tab==='promo');
+  if(show){
+    mount.innerHTML = `
+      <button class="mini-cart" data-action="open-cart" style="border:none">
+        <span class="left">${icon('basket')} ${n} item</span>
+        <span class="total">${rupiah(cartTotal())}</span>
+      </button>`;
+  } else {
+    mount.innerHTML = '';
+  }
+  if(tabContent) tabContent.classList.toggle('has-mini-cart', show);
+}
+
+function refresh(){
+  updateCartBadge();
+  renderMiniCart();
+  renderTabContent();
+  if(state.cartOpen) renderCartBody();
+}
+
+function setTab(tab){
+  state.tab = tab;
+  renderTabContent();
+  updateNavActive();
+  renderMiniCart();
+  window.scrollTo({top:0});
+  // Tab Pesanan dibuka & lagi login member -> tarik ulang riwayat dari server, biar
+  // perubahan status (mis. kasir baru tandai Selesai) langsung kelihatan tanpa perlu
+  // logout-login lagi. Non-blocking, tampilan lama tetap muncul dulu sambil nunggu.
+  if(tab==='pesanan' && state.auth.status==='member') loadRiwayatPelanggan();
+}
+function setCategory(cat){ state.category = cat; renderTabContent(); }
+function clearSearch(){
+  state.search='';
+  document.getElementById('search-input').value='';
+  document.getElementById('search-clear').style.display='none';
+  renderTabContent();
+}
+
+/* ================================================================
+   RENDER — konten tiap tab
+   ================================================================ */
+function productCard(p){
+  const qty = state.cart[p.id]||0;
+  const habis = p.stok<=0;
+  const rendahStok = !habis && p.stok<=5;
+  const thumb = p.gambar
+    ? '<img class="thumb-img" src="'+esc(p.gambar)+'" alt="">'
+    : '<div class="thumb" aria-hidden="true">'+(p.emoji||'🛍️')+'</div>';
+  return `
+    <div class="price-tag">
+      ${p.diskonPersen ? '<span class="discount-flag">-'+p.diskonPersen+'%</span>' : ''}
+      ${thumb}
+      <div class="name">${esc(p.nama)}</div>
+      <div class="unit">per ${esc(p.satuan)}</div>
+      ${rendahStok ? '<span class="stock-flag">Sisa '+p.stok+'</span>' : ''}
+      ${p.diskonPersen
+        ? '<div><div class="price-old">'+rupiah(p.harga)+'</div><div class="price">'+rupiah(hargaAkhir(p))+'</div></div>'
+        : '<div class="price">'+rupiah(p.harga)+'</div>'}
+      ${habis
+        ? '<div class="stock-out">Stok habis</div>'
+        : (qty===0
+          ? '<button class="btn-add" data-action="qty" data-id="'+p.id+'" data-delta="1">'+icon('plus')+' Tambah</button>'
+          : '<div class="qty-stepper"><button data-action="qty" data-id="'+p.id+'" data-delta="-1" aria-label="Kurangi">'+icon('minus')+'</button><span>'+qty+'</span><button data-action="qty" data-id="'+p.id+'" data-delta="1" '+(qty>=p.stok?'disabled':'')+' aria-label="Tambah">'+icon('plus')+'</button></div>')
+      }
+    </div>`;
+}
+
+function emptyState(iconName, text, ctaLabel, ctaTab){
+  return `<div class="empty-state">
+    ${icon(iconName)}
+    <p>${text}</p>
+    ${ctaLabel ? '<button class="btn-primary" data-action="set-tab" data-tab="'+ctaTab+'">'+ctaLabel+'</button>' : ''}
+  </div>`;
+}
+
+function renderTabContent(){
+  const el = document.getElementById('tab-content');
+  if(state.tab==='beranda') el.innerHTML = tabBeranda();
+  else if(state.tab==='belanja') el.innerHTML = tabBelanja();
+  else if(state.tab==='promo') el.innerHTML = tabPromo();
+  else if(state.tab==='pesanan') el.innerHTML = tabPesanan();
+  else if(state.tab==='akun') el.innerHTML = tabAkun();
+  updateStatusPill.length; // no-op guard
+  attachFaqListeners();
+}
+
+function tabBeranda(){
+  const cats = categoriesFromProducts().filter(c=>c!=='Semua');
+  const promoHtml = PROMOS.length ? `
+    <div class="section" style="margin-top:14px">
+      <div class="hero-card" style="margin:0">
+        <div class="chalkboard">
+          <div style="font-size:10px;text-transform:uppercase;letter-spacing:.1em;opacity:.85">${esc(PROMOS[0].periode||'')}</div>
+          <div class="font-chalk" style="font-size:28px;margin-top:2px">${esc(PROMOS[0].judul)}</div>
+          <div style="font-size:12.5px;opacity:.85;margin-top:4px">${esc(PROMOS[0].sub||'')}</div>
+        </div>
+      </div>
+    </div>` : '';
+
+  const diskonProduk = PRODUCTS.filter(p=>p.diskonPersen>0).slice(0,6);
+  const diskonHtml = diskonProduk.length ? `
+    <div class="section-head"><h2>Lagi Diskon</h2><button class="link" data-action="set-tab" data-tab="promo">Lihat semua</button></div>
+    <div class="h-scroll-cards">${diskonProduk.map(productCard).join('')}</div>
+  ` : '';
+
+  const catHtml = cats.length ? `
+    <div class="cat-quicklinks">
+      ${cats.slice(0,8).map(c=>`
+        <button class="cat-quick" data-action="set-category" data-category="${esc(c)}" onclick="setTab('belanja')">
+          <span class="ic-wrap">${icon(CATEGORY_ICONS[c]||'tag')}</span>
+          <span>${esc(c)}</span>
+        </button>`).join('')}
+    </div>` : '';
+
+  if(PRODUCTS.length===0){
+    return `
+      <div class="hero-card">
+        <div class="chalkboard chalkboard-plain">
+          <div class="store-name">${esc(STORE.nama)}</div>
+          <div class="store-tagline">${esc(STORE.tagline)}</div>
+          <div class="hero-meta">
+            <div class="hero-meta-row">${icon('clock')} ${STORE.jamBuka}–${STORE.jamTutup}</div>
+            <div class="hero-meta-row">${icon('mappin')} ${esc(STORE.alamat)}</div>
+          </div>
+        </div>
+      </div>
+      ${emptyState('boxEmpty','Katalog sedang disiapkan. Coba lagi sebentar lagi, ya!','')}
+    `;
+  }
+
+  return `
+    <div class="hero-card">
+      <div class="chalkboard chalkboard-plain">
+        <div class="store-name">${esc(STORE.nama)}</div>
+        <div class="store-tagline">${esc(STORE.tagline)}</div>
+        <div class="hero-meta">
+          <div class="hero-meta-row">${icon('clock')} ${STORE.jamBuka}–${STORE.jamTutup}</div>
+          <div class="hero-meta-row">${icon('mappin')} ${esc(STORE.alamat)}</div>
+        </div>
+      </div>
+    </div>
+    ${promoHtml}
+    ${catHtml}
+    ${diskonHtml}
+    <button class="catalog-cta" data-action="set-tab" data-tab="belanja">
+      <span style="display:flex;align-items:center;gap:10px">
+        ${icon('bag')}
+        <span><span class="title" style="display:block">Belanja Katalog Lengkap</span><span class="sub">Semua produk toko, siap diantar</span></span>
+      </span>
+      <span class="go">Lihat</span>
+    </button>
+  `;
+}
+
+function tabBelanja(){
+  const cats = categoriesFromProducts();
+  const list = filteredProducts();
+  const chips = cats.length>1 ? `<div class="h-scroll">${cats.map(c=>`<button class="chip" data-action="set-category" data-category="${esc(c)}" data-active="${c===state.category}">${esc(c)}</button>`).join('')}</div>` : '';
+
+  let body;
+  if(state.katalogLoading){
+    body = emptyState('boxEmpty','Memuat katalog produk...','');
+  } else if(state.katalogError){
+    body = `<div class="empty-state">${icon('boxEmpty')}<p>Gagal memuat katalog: ${esc(state.katalogError)}</p>
+      <button class="btn-primary" data-action="retry-katalog">Coba Lagi</button></div>`;
+  } else if(PRODUCTS.length===0){
+    body = emptyState('boxEmpty','Katalog belum tersedia. Toko sedang menyiapkan produk untuk dipesan online.','');
+  } else if(list.length===0){
+    body = state.search
+      ? emptyState('search','Produk "'+esc(state.search)+'" tidak ditemukan. Coba kata kunci lain.','')
+      : emptyState('boxEmpty','Belum ada produk di kategori ini.','');
+  } else {
+    body = `<div class="grid-2">${list.map(productCard).join('')}</div>`;
+  }
+  return chips + body;
+}
+
+function tabPromo(){
+  const diskon = PRODUCTS.filter(p=>p.diskonPersen>0);
+  if(diskon.length===0){
+    return emptyState('ticket','Belum ada promo aktif saat ini. Pantau terus, ya!','');
+  }
+  return `
+    <div class="section-head"><h2>Lagi Promo</h2><span style="font-size:11.5px;color:hsl(var(--ink-soft))">${diskon.length} produk diskon</span></div>
+    <div class="grid-2" style="padding-top:8px">${diskon.map(productCard).join('')}</div>
+  `;
+}
+
+function tabPesanan(){
+  // Member: riwayat ambil dari server (tersimpan permanen per akun, lintas device).
+  if(state.auth.status==='member'){
+    if(state.riwayatLoading){
+      return emptyState('boxEmpty','Memuat riwayat pesanan...','');
+    }
+    if(state.riwayatError){
+      return `<div class="empty-state">${icon('boxEmpty')}<p>Gagal memuat riwayat: ${esc(state.riwayatError)}</p>
+        <button class="btn-primary" data-action="retry-riwayat">Coba Lagi</button></div>`;
+    }
+    if(state.riwayatPelanggan.length===0){
+      return emptyState('packageCheck','Belum ada pesanan sebagai member. Yuk mulai belanja!','Mulai Belanja','belanja');
+    }
+    return `<div class="section" style="padding-top:16px">
+      <div class="riwayat-toolbar" style="padding:0 0 4px">
+        <h2 class="font-chalk" style="font-size:24px;margin:0">Riwayat Pesanan</h2>
+        <span style="font-size:11px;color:hsl(var(--ink-soft))">Sebagai ${esc(state.auth.pelanggan.nama)}</span>
+      </div>
+      <div class="retention-notice">Struk pesanan tersedia selama 60 hari sejak pesanan selesai.</div>
+      ${state.riwayatPelanggan.map((o,idx)=>{
+        // Boleh dibatalkan sendiri selagi Status server masih BARU - mencakup baik
+        // "belum diproses toko" MAUPUN "masih menunggu pembayaran" (o.belumBayar),
+        // karena StatusBayar pending TIDAK mengubah Status jadi DIPROSES (lihat
+        // catatan PesananOnlineService.batalkanPesananPublik di server).
+        const bisaBatal = o.statusMentah === 'BARU' && o.statusBayar !== 'PAID';
+        return `
+        <div class="order-card">
+          <button class="order-card-open" data-action="open-receipt-member" data-order-index="${idx}">
+            <div class="order-card-top">
+              <span class="font-mono" style="font-weight:700;font-size:13px">${esc(o.nomor)}</span>
+              <span class="order-status" data-belum-bayar="${o.belumBayar}">${esc(o.status)}</span>
+            </div>
+            <div class="order-meta">${esc(o.waktu)} · ${o.jumlahItem} item · ${o.metode==='ambil'?'Ambil di toko':'Diantar'}</div>
+            <div class="order-items">${o.items.map(it=>esc(it.qty+'x '+it.nama)).join(', ')}</div>
+            <div class="order-total">${rupiah(o.total)}</div>
+            ${o.belumBayar ? '<div class="order-meta" style="color:hsl(var(--red));font-weight:600;margin-top:4px">Ketuk untuk lanjutkan pembayaran</div>' : ''}
+          </button>
+          ${bisaBatal ? `<button class="btn-outline danger order-cancel-btn" data-action="batalkan-pesanan-member" data-order-index="${idx}">Batalkan Pesanan</button>` : ''}
+        </div>`;
+      }).join('')}
+    </div>`;
+  }
+
+  // Tamu: riwayat cuma lokal (hilang kalau reload) - behavior lama, tanpa akun memang gak ada tempat nyimpennya.
+  if(state.orders.length===0){
+    return emptyState('packageCheck','Belum ada pesanan. Yuk mulai belanja kebutuhanmu!','Mulai Belanja','belanja') +
+      `<div class="account-guest-note" style="text-align:center;padding:0 28px">Belanja sebagai <strong>Tamu</strong> - riwayat ini cuma tersimpan di perangkat ini. <button class="link-btn" data-action="open-auth">Masuk / daftar member</button> biar riwayat pesanan tersimpan otomatis.</div>`;
+  }
+  return `<div class="section" style="padding-top:16px">
+    <h2 class="font-chalk" style="font-size:24px;margin:0 0 4px">Riwayat Pesanan (Tamu)</h2>
+    <div class="account-guest-note" style="margin-bottom:12px">Cuma tersimpan di perangkat ini. <button class="link-btn" data-action="open-auth">Masuk / daftar member</button> biar tersimpan otomatis lintas perangkat.</div>
+    <div class="retention-notice">Struk pesanan tersedia selama 60 hari sejak pesanan selesai.</div>
+    ${state.orders.slice().reverse().map((o)=>{
+      const idx = state.orders.indexOf(o);
+      const belumBayar = orderBelumBayar(o.bayar, o.statusBayar);
+      // Tamu: pesanan lokal ini TIDAK pernah ditarik ulang statusnya dari server setelah
+      // dibuat (§ keterbatasan lama riwayat Tamu, di luar cakupan perubahan ini), jadi
+      // TIDAK ada Status server buat dicek di sini seperti versi member di atas. Tombol
+      // batal tetap ditampilkan (kecuali baru saja dibatalkan di perangkat ini) - server
+      // (`batalkanPesananPublik`) yang jadi penentu akhir; kalau pesanan ternyata sudah
+      // diproses toko, klik akan gagal dengan pesan jelas dari server.
+      const bisaBatal = !o.dibatalkan && o.statusBayar !== 'PAID';
+      return `
+      <div class="order-card">
+        <button class="order-card-open" data-action="open-receipt" data-order-index="${idx}">
+          <div class="order-card-top">
+            <span class="font-mono" style="font-weight:700;font-size:13px">${o.nomor}</span>
+            <span class="order-status" data-belum-bayar="${belumBayar}">${esc(orderStatusLabel(o.status, o.bayar, o.statusBayar))}</span>
+          </div>
+          <div class="order-meta">${esc(o.waktu)} · ${o.jumlahItem} item · ${o.metode==='ambil'?'Ambil di toko':'Diantar'}</div>
+          <div class="order-items">${o.items.map(it=>esc(it.qty+'x '+it.nama)).join(', ')}</div>
+          <div class="order-total">${rupiah(o.total)}</div>
+          ${belumBayar ? '<div class="order-meta" style="color:hsl(var(--red));font-weight:600;margin-top:4px">Ketuk untuk lanjutkan pembayaran</div>' : ''}
+        </button>
+        ${bisaBatal ? `<button class="btn-outline danger order-cancel-btn" data-action="batalkan-pesanan-tamu" data-order-index="${idx}">Batalkan Pesanan</button>` : ''}
+      </div>`;
+    }).join('')}
+  </div>`;
+}
+
+function accountCard(){
+  return `
+    <div class="account-card">
+      <div class="who">
+        <div class="account-avatar">${icon('user')}</div>
+        <div style="min-width:0">
+          <div class="account-name">Belanja sebagai Tamu</div>
+          <div class="account-sub">Belum masuk / belum member</div>
+        </div>
+      </div>
+      <div class="account-guest-note" style="margin-top:10px">Masuk pakai nomor WhatsApp biar data pemesan & riwayat pesanan tersimpan otomatis tiap belanja. Belanja tanpa akun tetap bisa, kok.</div>
+      <div class="account-actions">
+        <button class="btn-primary" style="border-radius:10px" data-action="open-auth">Masuk / Daftar Member</button>
+      </div>
+    </div>`;
+}
+
+const MEMBER_TIER_LABEL = { REGULAR:'Regular', SILVER:'Silver', GOLD:'Gold', PLATINUM:'Platinum' };
+
+/**
+ * Kartu "Poin Member" tab Akun - pengganti accountCard() begitu status==='member'.
+ * Poin/Tier/Nomor Member di sini SELALU data asli dari modul Member RMS (Sheet_Member,
+ * lewat loadPoinMember()/apiPoinMemberPelangganPublik) - BUKAN dari akun login webapp
+ * (yang cuma punya nama/WA, lihat catatan PelangganOnlineModel.js). Nomor WA akun login
+ * belum tentu terdaftar member loyalty (kasir yang daftarkan lewat POS), jadi ada 3
+ * kondisi ditangani: loading, gagal muat, dan "belum terdaftar member" (bukan error).
+ */
+function poinMemberCard(){
+  const p = state.auth.pelanggan;
+  if(state.poinLoading){
+    return `<div class="poin-card poin-card-plain">
+      <div class="poin-card-loading">${icon('boxEmpty')}<span>Memuat data poin...</span></div>
+    </div>`;
+  }
+  if(state.poinError){
+    return `<div class="poin-card poin-card-plain">
+      <div class="poin-hi">Hai, <strong>${esc(p.nama)}</strong></div>
+      <div class="poin-error" style="margin-top:8px">Gagal memuat poin: ${esc(state.poinError)} <button class="link-btn" data-action="retry-poin">Coba lagi</button></div>
+      <div class="account-actions"><button class="btn-outline danger" data-action="logout">Keluar</button></div>
+    </div>`;
+  }
+  const m = state.poinMember;
+  if(!m || !m.terdaftar){
+    return `<div class="poin-card poin-card-plain">
+      <div class="poin-hi">Hai, <strong>${esc(p.nama)}</strong></div>
+      <div class="account-guest-note" style="margin-top:8px">Nomor WhatsApp kamu belum terdaftar sebagai member poin toko. Datang & belanja ke toko, minta kasir daftarkan pakai nomor ini biar mulai kumpul poin.</div>
+      <div class="account-actions"><button class="btn-outline danger" data-action="logout">Keluar</button></div>
+    </div>`;
+  }
+  return `
+    <div class="poin-card">
+      <div class="poin-hero">
+        <div class="poin-hi">Hai, <strong>${esc(p.nama)}</strong></div>
+        <div class="poin-tier-badge">${icon('crown')}${esc(MEMBER_TIER_LABEL[m.tier] || m.tier)} Member</div>
+      </div>
+      <div class="poin-stats">
+        <div class="poin-stat">
+          <div class="poin-stat-num">${icon('coin')}${Number(m.poin||0).toLocaleString('id-ID')}</div>
+          <div class="poin-stat-label">Poin</div>
+        </div>
+        <div class="poin-stat-divider"></div>
+        <div class="poin-stat">
+          <div class="poin-stat-num font-mono" style="font-size:14px">${esc(m.nomorMember)}</div>
+          <div class="poin-stat-label">Nomor Member</div>
+        </div>
+      </div>
+      <button class="poin-barcode-btn" data-action="open-member-barcode">${icon('qrcode')} Tunjukkan ke Kasir</button>
+    </div>
+    <div class="account-actions" style="margin:10px 16px 0"><button class="btn-outline danger" style="flex:none;padding:9px 18px" data-action="logout">Keluar</button></div>
+  `;
+}
+
+function riwayatPelangganSection(){
+  if(state.auth.status!=='member') return '';
+  let body;
+  if(state.riwayatLoading){
+    body = `<div class="empty-state" style="padding:24px">${icon('boxEmpty')}<p>Memuat riwayat pesanan...</p></div>`;
+  } else if(state.riwayatError){
+    body = `<div class="empty-state" style="padding:24px">${icon('boxEmpty')}<p>Gagal memuat riwayat: ${esc(state.riwayatError)}</p><button class="btn-primary" data-action="retry-riwayat">Coba Lagi</button></div>`;
+  } else if(state.riwayatPelanggan.length===0){
+    body = `<div class="empty-state" style="padding:24px"><p>Belum ada riwayat pesanan sebagai member.</p></div>`;
+  } else {
+    body = state.riwayatPelanggan.map(o=>`
+      <div class="order-card" style="text-align:left">
+        <div class="order-card-top">
+          <span class="font-mono" style="font-weight:700;font-size:13px">${esc(o.nomor)}</span>
+          <span class="order-status">${esc(o.status)}</span>
+        </div>
+        <div class="order-meta">${esc(o.waktu)} · ${o.jumlahItem} item · ${o.metode==='ambil'?'Ambil di toko':'Diantar'}</div>
+        <div class="order-total">${rupiah(o.total)}</div>
+      </div>`).join('');
+  }
+  return `
+    <div class="riwayat-toolbar">
+      <h2 class="font-chalk" style="font-size:20px">Riwayat Sebagai Member</h2>
+    </div>
+    <div class="section" style="padding-top:8px">${body}</div>
+  `;
+}
+
+function tabAkun(){
+  const metode = 'Ada 2 pilihan langsung saat checkout: "Bayar di Tempat" (tunai, dibayar pas ambil/diterima) atau "QRIS" (scan & transfer sebelum pesanan dikirim ke toko).'
+    + (STORE.metodePembayaran.length ? ' Metode lain: ' + STORE.metodePembayaran.join(', ') + ' - hubungi toko via WhatsApp.' : '');
+  const faqs = [
+    {q:'Bagaimana cara memesan?', a:'Pilih produk dan tambahkan ke keranjang, buka keranjang lalu ketuk Checkout, isi data pemesan, dan kirim. Toko akan menghubungi kamu lewat WhatsApp untuk konfirmasi.'},
+    {q:'Ambil di toko atau diantar?', a:'Keduanya tersedia. Pilih "Ambil di Toko" jika ingin mengambil sendiri, atau "Diantar" dan isi alamat pengantaran saat checkout.'},
+    {q:'Apa saja metode pembayarannya?', a: metode},
+    {q:'Kenapa harus daftar member?', a:'Member gak wajib - belanja tetap bisa sebagai Tamu. Bedanya, kalau masuk sebagai member, nama & nomor WA otomatis terisi tiap checkout dan riwayat pesanan tersimpan biar gampang dicek lagi.'}
+  ];
+  return `
+    ${state.auth.status==='member' ? poinMemberCard() : accountCard()}
+    <div class="info-card">
+      <div class="info-row">${icon('mappin')}<div><strong>Alamat Toko</strong>${esc(STORE.alamat)}</div></div>
+      <div class="info-row">${icon('clock')}<div><strong>Jam Operasional</strong>${STORE.jamBuka} – ${STORE.jamTutup} setiap hari</div></div>
+      <a class="wa-btn" href="https://wa.me/${STORE.whatsapp}?text=${encodeURIComponent('Halo '+STORE.nama+', saya mau tanya-tanya.')}" target="_blank" rel="noopener">
+        ${icon('whatsapp')} Chat via WhatsApp
+      </a>
+    </div>
+    <div class="faq-list">
+      ${faqs.map((f,i)=>`
+        <div class="faq-item" data-open="${state.faqOpen===i}">
+          <button class="faq-q" data-action="toggle-faq" data-faq="${i}">${esc(f.q)} ${icon('chevronDown')}</button>
+          ${state.faqOpen===i ? '<div class="faq-a">'+esc(f.a)+'</div>' : ''}
+        </div>`).join('')}
+    </div>
+    <div class="akun-menu">
+      <button class="akun-menu-btn" data-action="open-legal" data-legal="tnc">${icon('fileText')}Syarat &amp; Ketentuan<span class="chev">${icon('chevronRight')}</span></button>
+      <button class="akun-menu-btn" data-action="open-legal" data-legal="refund">${icon('fileText')}Kebijakan Pengembalian Dana (Refund)<span class="chev">${icon('chevronRight')}</span></button>
+    </div>
+    <div class="admin-entry-row"><button class="link-btn" data-action="open-admin">⚙ Pengaturan Toko (Admin)</button></div>
+  `;
+}
+
+/* ================================================================
+   LEGAL — Syarat & Ketentuan + Kebijakan Refund
+   (item 2 & 3 daftar kelengkapan verifikasi iPaymu: FAQ sudah ada di
+   atas (tabAkun), dua ini nyusul supaya toko lolos review iPaymu)
+   ================================================================ */
+const LEGAL_UPDATED = '14 Agustus 2026'; // BARU: ganti tanggal tiap isi kebijakan ini diubah
+
+const LEGAL_CONTENT = {
+  tnc: {
+    title: 'Syarat & Ketentuan',
+    body: () => `
+      <div class="legal-updated">Terakhir diperbarui: ${LEGAL_UPDATED}</div>
+      <h3>1. Tentang Layanan</h3>
+      <p>Halaman ini adalah layanan pemesanan online milik <strong>${esc(STORE.nama)}</strong>, beralamat di ${esc(STORE.alamat)}. Dengan melakukan pemesanan lewat halaman ini, kamu dianggap sudah membaca dan menyetujui Syarat &amp; Ketentuan berikut.</p>
+      <h3>2. Akun Tamu &amp; Member</h3>
+      <ul>
+        <li>Belanja bisa dilakukan sebagai Tamu (tanpa akun) atau sebagai Member.</li>
+        <li>Data yang diminta saat checkout (nama &amp; nomor WhatsApp) dipakai toko untuk konfirmasi dan koordinasi pesanan, bukan untuk tujuan lain.</li>
+        <li>Member bertanggung jawab menjaga kerahasiaan nomor WhatsApp yang didaftarkan karena dipakai sebagai identitas login.</li>
+      </ul>
+      <h3>3. Pemesanan</h3>
+      <ul>
+        <li>Produk, harga, dan stok yang tampil mengikuti data terbaru dari toko dan bisa berubah sewaktu-waktu tanpa pemberitahuan sebelumnya.</li>
+        <li>Pesanan dianggap sah setelah kamu menekan tombol "Kirim Pesanan" dan menerima nomor pesanan di halaman struk.</li>
+        <li>Toko berhak membatalkan atau menyesuaikan pesanan bila stok ternyata habis atau ada kesalahan input harga/produk, dan akan menghubungi pemesan lewat WhatsApp.</li>
+      </ul>
+      <h3>4. Pembayaran</h3>
+      <ul>
+        <li><strong>Bayar di Tempat</strong> — dibayar tunai saat barang diambil/diterima.</li>
+        <li><strong>QRIS</strong> — dibayar via QR dinamis yang diproses melalui payment gateway iPaymu; status pembayaran terverifikasi otomatis, tidak perlu kirim bukti transfer manual.</li>
+        ${STORE.metodePembayaran.length ? `<li>Metode lain yang tersedia: ${esc(STORE.metodePembayaran.join(', '))}.</li>` : ''}
+      </ul>
+      <h3>5. Pengambilan &amp; Pengantaran</h3>
+      <p>Pesanan bisa diambil sendiri di toko sesuai jam operasional (${STORE.jamBuka}–${STORE.jamTutup}) atau diantar ke alamat yang diisi saat checkout. Ongkos kirim (jika ada) dan estimasi waktu antar dikonfirmasi toko lewat WhatsApp.</p>
+      <h3>6. Pembatalan Pesanan</h3>
+      <p>Pesanan berstatus "Baru" masih bisa dibatalkan sendiri lewat menu Pesanan. Pesanan yang sudah diproses toko hanya bisa dibatalkan lewat koordinasi WhatsApp, mengikuti ketentuan pada Kebijakan Pengembalian Dana.</p>
+      <h3>7. Poin Member</h3>
+      <p>Poin didapat dari transaksi yang berhasil dan bisa ditukar sebagai potongan belanja sesuai rasio yang berlaku saat checkout. Poin tidak dapat diuangkan dan bisa dibatalkan toko bila ditemukan indikasi kecurangan.</p>
+      <h3>8. Perubahan Ketentuan</h3>
+      <p>Toko dapat mengubah Syarat &amp; Ketentuan ini sewaktu-waktu. Perubahan berlaku sejak dipublikasikan di halaman ini.</p>
+      <h3>9. Kontak</h3>
+      <p>Pertanyaan seputar Syarat &amp; Ketentuan bisa disampaikan lewat WhatsApp toko di nomor ${esc(STORE.whatsapp)}.</p>
+    `
+  },
+  refund: {
+    title: 'Kebijakan Pengembalian Dana',
+    body: () => `
+      <div class="legal-updated">Terakhir diperbarui: ${LEGAL_UPDATED}</div>
+      <h3>1. Kapan Refund Berlaku</h3>
+      <ul>
+        <li>Barang yang diterima tidak sesuai pesanan (salah produk/jumlah).</li>
+        <li>Barang diterima dalam kondisi rusak atau tidak layak (kedaluwarsa, bocor, dsb).</li>
+        <li>Pesanan sudah dibayar (QRIS) tapi ternyata tidak bisa dipenuhi toko karena stok habis.</li>
+        <li>Pesanan dibatalkan toko sebelum diproses/dikirim.</li>
+      </ul>
+      <h3>2. Kapan Refund Tidak Berlaku</h3>
+      <ul>
+        <li>Pesanan sudah diterima dalam kondisi baik dan sesuai, lalu berubah pikiran (bukan cacat/salah kirim).</li>
+        <li>Klaim diajukan lewat batas waktu pelaporan di poin 3.</li>
+        <li>Kerusakan terjadi setelah barang diterima dan berada di luar tanggung jawab toko.</li>
+      </ul>
+      <h3>3. Cara Mengajukan</h3>
+      <ol>
+        <li>Hubungi WhatsApp toko di nomor <strong>${esc(STORE.whatsapp)}</strong> maksimal 1x24 jam sejak barang diterima (atau segera setelah tahu pesanan bermasalah).</li>
+        <li>Sertakan nomor pesanan, foto/video bukti produk, dan alasan pengajuan.</li>
+        <li>Toko akan memverifikasi klaim maksimal 1x24 jam kerja setelah laporan diterima lengkap.</li>
+      </ol>
+      <h3>4. Metode &amp; Waktu Pengembalian Dana</h3>
+      <ul>
+        <li><strong>Pembayaran QRIS (iPaymu)</strong> — dana dikembalikan ke rekening/e-wallet sumber pembayaran, estimasi 3–7 hari kerja setelah klaim disetujui.</li>
+        <li><strong>Bayar di Tempat</strong> — dikembalikan tunai saat serah terima barang pengganti, atau transfer bank sesuai kesepakatan dengan toko.</li>
+        <li>Alternatif lain (di luar refund tunai) adalah penggantian barang atau kompensasi Poin Member, sesuai kesepakatan pemesan dan toko.</li>
+      </ul>
+      <h3>5. Kontak</h3>
+      <p>Semua proses refund dikoordinasikan langsung lewat WhatsApp toko di nomor ${esc(STORE.whatsapp)} agar bisa dipantau kedua pihak.</p>
+    `
+  }
+};
+
+function openLegal(kind){
+  const c = LEGAL_CONTENT[kind];
+  if(!c) return;
+  document.getElementById('legal-body').innerHTML = `
+    <h2>${esc(c.title)}</h2>
+    <div class="legal-text">${c.body()}</div>
+    <div class="guest-link-row"><button class="link-btn" data-action="close-legal">Tutup</button></div>
+  `;
+  document.getElementById('legal-overlay').setAttribute('data-open','true');
+  document.body.style.overflow='hidden';
+}
+function closeLegal(){
+  document.getElementById('legal-overlay').setAttribute('data-open','false');
+  document.body.style.overflow='';
+}
+
+function attachFaqListeners(){
+  document.querySelectorAll('[data-action="toggle-faq"]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const i = Number(btn.dataset.faq);
+      state.faqOpen = state.faqOpen===i ? null : i;
+      renderTabContent();
+    });
+  });
+}
+
+/* ================================================================
+   CART SHEET
+   ================================================================ */
+function openCart(){ state.cartOpen=true; document.getElementById('cart-overlay').setAttribute('data-open','true'); renderCartBody(); document.body.style.overflow='hidden'; }
+function closeCart(){ state.cartOpen=false; document.getElementById('cart-overlay').setAttribute('data-open','false'); document.body.style.overflow=''; }
+
+function renderCartBody(){
+  const lines = cartLines();
+  const body = document.getElementById('cart-body');
+  if(lines.length===0){
+    body.innerHTML = emptyState('basket','Keranjang masih kosong. Yuk pilih belanjaan dulu.','Mulai Belanja','belanja');
+    return;
+  }
+  body.innerHTML = `
+    ${lines.map(l=>`
+      <div class="cart-line">
+        <div style="flex:1;min-width:0">
+          <div class="cart-line-name">${l.produk.emoji?l.produk.emoji+' ':''}${esc(l.produk.nama)}</div>
+          <div class="cart-line-sub">${l.qty} x ${rupiah(hargaAkhir(l.produk))}${l.produk.diskonPersen?' (-'+l.produk.diskonPersen+'%)':''}</div>
+          <div class="qty-stepper" style="max-width:110px;margin-top:8px">
+            <button data-action="qty" data-id="${l.produk.id}" data-delta="-1" aria-label="Kurangi">${icon('minus')}</button>
+            <span>${l.qty}</span>
+            <button data-action="qty" data-id="${l.produk.id}" data-delta="1" ${l.qty>=l.produk.stok?'disabled':''} aria-label="Tambah">${icon('plus')}</button>
+          </div>
+        </div>
+        <div class="cart-line-total">${rupiah(hargaAkhir(l.produk)*l.qty)}</div>
+      </div>`).join('')}
+    <div class="cart-summary">
+      <div class="cart-summary-row"><span>Total</span><span class="val">${rupiah(cartTotal())}</span></div>
+      <button class="submit-btn" data-action="open-checkout">Checkout</button>
+    </div>
+  `;
+}
+
+/* ================================================================
+   CHECKOUT DIALOG
+   ================================================================ */
+function openCheckout(){
+  if(cartLines().length===0) return;
+  closeCart();
+  state.checkoutOpen = true;
+  document.getElementById('checkout-overlay').setAttribute('data-open','true');
+  renderCheckoutBody();
+  document.body.style.overflow='hidden';
+}
+function closeCheckout(){ state.checkoutOpen=false; document.getElementById('checkout-overlay').setAttribute('data-open','false'); document.body.style.overflow=''; }
+function setMethod(m){ state.method=m; renderCheckoutBody(); }
+function setPayment(p){ state.payment=p; renderCheckoutBody(); }
+
+function qrisBox(){
+  // BARU (integrasi QRIS ASLI via iPaymu) - QR dinamis cuma bisa dibuat SETELAH
+  // pesanan tersimpan di server (referenceId ke iPaymu = Kode resmi pesanan, belum ada
+  // sebelum submit). Jadi di dialog checkout ini cuma info, QR beneran muncul di struk
+  // (openReceiptOrder) begitu pesanan berhasil dikirim.
+  return `<div class="qris-box">
+    <div class="qris-total">${rupiah(cartTotal())}</div>
+    <div class="qris-note">Kode QR pembayaran (khusus buat pesanan ini) akan muncul di struk setelah kamu klik "Kirim Pesanan". Scan pakai aplikasi bank/e-wallet apa saja - pembayaran terverifikasi otomatis, tidak perlu kirim bukti manual.</div>
+  </div>`;
+}
+
+// BARU (metode bayar Virtual Account via iPaymu) - daftar bank HARUS sinkron manual
+// sama VA_BANKS (server, Constants.js) - server tetap validasi ulang kode bank yang
+// dikirim, daftar di sini murni buat tampilan dropdown.
+const VA_BANKS = { bca:'BCA', bni:'BNI', bri:'BRI', mandiri:'Mandiri', permata:'Permata' };
+function setVaBank(bank){ state.vaBank = bank; renderCheckoutBody(); }
+
+// BARU (fitur Tukar Poin checkout, mirror POSPage_RP_PER_POIN_REDEEM) - rasio TETAP
+// di-hardcode di client, murni estimasi tampilan sebelum "Kirim Pesanan" - server
+// (PesananOnlineService._resolvePoinRedeem) TETAP sumber kebenaran final, sama trade-off
+// yang sudah diterima POS.
+const RP_PER_POIN_REDEEM = 1;
+
+/**
+ * Potongan Rupiah estimasi dari input Tukar Poin checkout saat ini - 0 kalau bukan
+ * member, belum terdaftar sebagai Member poin, atau Nomor WhatsApp yang diisi BELUM
+ * sama persis dengan nomor member (lihat poinRedeemSection() - kondisi sama dipakai
+ * buat tampil/sembunyikan input-nya).
+ */
+function estimasiPoinDiskon(){
+  if(state.auth.status!=='member' || !state.poinMember || !state.poinMember.terdaftar) return 0;
+  const wa = state.form.wa.trim();
+  if(!wa || wa !== state.auth.pelanggan.wa) return 0;
+  const saldo = state.poinMember.poin||0;
+  const dipakai = Math.min(Math.max(0, Math.floor(Number(state.form.poinDigunakan)||0)), saldo);
+  return Math.min(dipakai*RP_PER_POIN_REDEEM, cartTotal());
+}
+
+/**
+ * Blok input Tukar Poin di dialog checkout - HANYA muncul buat member yang Nomor
+ * WhatsApp-nya (diisi manual tiap checkout, lihat catatan submitOrder) SAMA PERSIS
+ * dengan nomor akun member login (`state.auth.pelanggan.wa`) - poin selalu dicari
+ * server pakai `kontak` yang diisi di form ini, bukan nomor akun login (lihat
+ * PesananOnlineService._resolvePoinRedeem), jadi kalau beda nomor, redeem PASTI
+ * ditolak server - tuntun customer isi nomor yang benar dulu daripada checkout gagal.
+ */
+function poinRedeemSection(){
+  if(!(state.auth.status==='member' && state.poinMember && state.poinMember.terdaftar)) return '';
+  const wa = state.form.wa.trim();
+  if(!wa || wa !== state.auth.pelanggan.wa){
+    return `<div class="account-guest-note">Isi Nomor WhatsApp sama persis dengan nomor member kamu (<span class="font-mono">${esc(state.auth.pelanggan.wa)}</span>) buat bisa pakai Poin.</div>`;
+  }
+  const saldo = state.poinMember.poin||0;
+  if(saldo<=0){
+    return `<div class="account-guest-note">Saldo Poin kamu masih 0.</div>`;
+  }
+  return `<div class="field" style="margin-bottom:4px">
+    <label for="inp-poin">Tukar Poin (Saldo: ${saldo.toLocaleString('id-ID')} Poin)</label>
+    <input id="inp-poin" type="number" inputmode="numeric" min="0" max="${saldo}" step="1" placeholder="0" value="${esc(state.form.poinDigunakan||'')}">
+    <div class="account-guest-note" id="poin-hint" style="margin-top:4px"></div>
+  </div>`;
+}
+
+/** Re-render #poin-section apa adanya + pasang ulang listener input-nya (dipanggil
+ * saat dialog checkout pertama dibuka DAN tiap kali Nomor WhatsApp berubah - lihat
+ * listener 'wa' di renderCheckoutBody). SENGAJA method TERPISAH dari renderCheckoutBody
+ * penuh - re-render dialog UTUH tiap ketik WA/Poin akan mencabut fokus input di tengah
+ * mengetik (innerHTML diganti total), jadi cuma container kecil ini yang di-refresh. */
+function renderPoinSection(){
+  const el = document.getElementById('poin-section');
+  if(!el) return;
+  el.innerHTML = poinRedeemSection();
+  const poinElm = document.getElementById('inp-poin');
+  if(poinElm){
+    poinElm.addEventListener('input', e=>{ state.form.poinDigunakan = e.target.value; updatePoinDisplay(); });
+  }
+  updatePoinDisplay();
+}
+
+/** Update Total ringkasan + hint potongan Poin TANPA re-render dialog (dipanggil tiap
+ * ketik di #inp-poin) - pola sama alasan renderPoinSection() di atas, hindari fokus
+ * input hilang. */
+function updatePoinDisplay(){
+  const diskon = estimasiPoinDiskon();
+  const totalEl = document.getElementById('checkout-total-val');
+  if(totalEl) totalEl.textContent = rupiah(Math.max(0, cartTotal()-diskon));
+  const hintEl = document.getElementById('poin-hint');
+  if(hintEl){
+    const saldo = (state.poinMember && state.poinMember.poin)||0;
+    const dipakai = Math.min(Math.max(0, Math.floor(Number(state.form.poinDigunakan)||0)), saldo);
+    hintEl.textContent = dipakai>0
+      ? 'Potongan estimasi: '+rupiah(diskon)+' (dari '+dipakai.toLocaleString('id-ID')+' Poin)'
+      : 'Kosongkan kalau tidak mau pakai Poin.';
+  }
+}
+function vaBox(){
+  return `<div class="qris-box">
+    <div class="qris-note" style="margin-bottom:8px">Pilih bank tujuan transfer Virtual Account:</div>
+    <div class="method-toggle" style="flex-wrap:wrap">
+      ${Object.keys(VA_BANKS).map(b=>`<button class="method-btn" data-action="set-va-bank" data-bank="${b}" data-active="${state.vaBank===b}">${VA_BANKS[b]}</button>`).join('')}
+    </div>
+    <div class="qris-total" style="margin-top:8px">${rupiah(cartTotal())}</div>
+    <div class="qris-note">Nomor VA (khusus buat pesanan ini) akan muncul di struk setelah kamu klik "Kirim Pesanan". Transfer sejumlah tagihan persis - pembayaran terverifikasi otomatis, tidak perlu kirim bukti manual.</div>
+  </div>`;
+}
+
+function renderCheckoutBody(){
+  const n = cartCount();
+  const body = document.getElementById('checkout-body');
+  const isMember = state.auth.status==='member';
+  body.innerHTML = `
+    <h2>Selesaikan Pesanan</h2>
+    ${isMember
+      ? '<div class="auth-hint" style="margin-top:-6px">Masuk sebagai member <strong>'+esc(state.auth.pelanggan.nama)+'</strong>. Nama otomatis terisi, No WhatsApp isi manual.</div>'
+      : '<div class="auth-hint" style="margin-top:-6px">Belanja sebagai Tamu. Sudah member? <button class="link-btn" data-action="open-auth">Masuk</button></div>'}
+    <div class="method-toggle">
+      <button class="method-btn" data-action="set-method" data-method="ambil" data-active="${state.method==='ambil'}">${icon('store')} Ambil di Toko</button>
+      <button class="method-btn" data-action="set-method" data-method="antar" data-active="${state.method==='antar'}">${icon('truck')} Diantar</button>
+    </div>
+    <div class="field"><label for="inp-nama">Nama Pelanggan</label><input id="inp-nama" type="text" placeholder="Nama kamu" value="${esc(state.form.nama)}"></div>
+    <div class="field"><label for="inp-wa">Nomor WhatsApp</label><input id="inp-wa" type="tel" placeholder="08xx-xxxx-xxxx" value="${esc(state.form.wa)}"></div>
+    <div id="poin-section">${isMember ? poinRedeemSection() : ''}</div>
+    ${state.method==='antar' ? `<div class="field"><label for="inp-alamat">Alamat Pengantaran</label><textarea id="inp-alamat" rows="2" placeholder="Jalan, nomor rumah, patokan">${esc(state.form.alamat)}</textarea></div>` : ''}
+    <div class="field"><label for="inp-catatan">Catatan (opsional)</label><textarea id="inp-catatan" rows="2" placeholder="Mis. ganti merk lain jika habis">${esc(state.form.catatan)}</textarea></div>
+    <div class="field-label-plain">Metode Pembayaran</div>
+    <div class="method-toggle">
+      <button class="method-btn" data-action="set-payment" data-payment="cod" data-active="${state.payment==='cod'}">${icon('store')} Bayar di Tempat</button>
+      <button class="method-btn" data-action="set-payment" data-payment="qris" data-active="${state.payment==='qris'}">${icon('qrcode')} QRIS</button>
+      <button class="method-btn" data-action="set-payment" data-payment="va" data-active="${state.payment==='va'}">${icon('bank')} Virtual Account</button>
+    </div>
+    ${state.payment==='qris' ? qrisBox() : ''}
+    ${state.payment==='va' ? vaBox() : ''}
+    <div class="checkout-summary"><span>Total (${n} item)</span><span class="val" id="checkout-total-val">${rupiah(Math.max(0,cartTotal()-estimasiPoinDiskon()))}</span></div>
+    <button class="submit-btn" id="submit-order-btn" data-action="submit-order" ${isSubmitEnabled()?'':'disabled'}>Kirim Pesanan</button>
+    <div class="submit-hint">Toko akan mengonfirmasi pesananmu lewat WhatsApp ke nomor yang kamu isi.</div>
+  `;
+  ['nama','wa','alamat','catatan'].forEach(key=>{
+    const elm = document.getElementById('inp-'+key);
+    if(!elm) return;
+    elm.addEventListener('input', e=>{
+      state.form[key]=e.target.value;
+      updateSubmitEnabled();
+      // Fitur Tukar Poin - blok Poin muncul/hilang tergantung Nomor WhatsApp cocok
+      // nomor member atau tidak (lihat poinRedeemSection()), jadi refresh container
+      // kecilnya tiap WA berubah - BUKAN renderCheckoutBody() penuh (akan mencabut
+      // fokus input WA ini sendiri di tengah mengetik).
+      if(key==='wa' && state.auth.status==='member') renderPoinSection();
+    });
+  });
+  updateSubmitEnabled();
+  if(isMember) renderPoinSection();
+}
+function isSubmitEnabled(){
+  const nama = (state.form.nama||'').trim();
+  const wa = (state.form.wa||'').trim();
+  const alamat = (state.form.alamat||'').trim();
+  return !!(nama && wa && (state.method!=='antar' || alamat) && (state.payment!=='va' || state.vaBank));
+}
+function updateSubmitEnabled(){
+  const btn = document.getElementById('submit-order-btn');
+  if(!btn) return;
+  btn.disabled = !isSubmitEnabled();
+}
+async function submitOrder(){
+  const lines = cartLines();
+  if(lines.length===0 || state.submitting) return;
+
+  state.submitting = true;
+  const btn = document.getElementById('submit-order-btn');
+  if(btn){ btn.disabled = true; btn.textContent = 'Mengirim...'; }
+  hideCheckoutError();
+
+  try{
+    const saved = await api('apiBuatPesananOnlinePublik', {
+      pelanggan: state.form.nama.trim(),
+      kontak: state.form.wa.trim(),
+      tipe: state.method==='antar' ? 'Delivery' : 'Pickup',
+      alamat: state.method==='antar' ? state.form.alamat.trim() : '',
+      items: lines.map(l=>({ produkId: l.produk.id, qty: l.qty })),
+      catatan: state.form.catatan.trim(),
+      // Kalau lagi masuk sebagai member, pesanan dipasang ke akun ini biar
+      // muncul di Riwayat Pesanan server. Tamu = null (behavior lama).
+      pelangganId: state.auth.status==='member' ? state.auth.pelanggan.id : null,
+      metodeBayar: state.payment==='qris' ? 'QRIS' : (state.payment==='va' ? 'VA' : 'COD'),
+      vaBank: state.payment==='va' ? state.vaBank : undefined,
+      // Fitur Tukar Poin (BARU) - server tetap validasi ulang saldo & resolve Member
+      // dari `kontak` di atas (lihat PesananOnlineService._resolvePoinRedeem), angka di
+      // sini murni permintaan customer. 0 kalau bukan member/tidak diisi (jalur biasa).
+      poinDigunakan: state.auth.status==='member' ? (Math.max(0, Math.floor(Number(state.form.poinDigunakan)||0))) : 0
+    });
+    // `saved` datang dari PesananOnlineModel.toClientObject (server) - dipakai
+    // apa adanya buat struk (Kode resmi, Items sudah dihitung ulang server,
+    // Total server jadi sumber kebenaran, BUKAN cartTotal() sisi client).
+    const order = {
+      nomor: saved.Kode,
+      nama: saved.Pelanggan || state.form.nama.trim(),
+      wa: saved.Kontak || state.form.wa.trim(),
+      alamat: saved.Alamat || '',
+      catatan: saved.Catatan || '',
+      metode: state.method,
+      bayar: saved.MetodeBayar || (state.payment==='qris' ? 'QRIS' : (state.payment==='va' ? 'VA' : 'COD')),
+      items: (saved.Items || []).map(it=>({ nama: it.nama, qty: it.qty, harga: it.harga })),
+      jumlahItem: (saved.Items || []).reduce((s,it)=>s+it.qty,0),
+      total: saved.Total != null ? saved.Total : cartTotal(),
+      waktu: new Date().toLocaleString('id-ID',{dateStyle:'medium',timeStyle:'short'}),
+      // Timestamp mentah (bukan string terformat `waktu` di atas) - dipakai hitung
+      // countdown 24 jam QRIS/VA di openReceiptOrder (mulai sejak pesanan diklik/dibuat,
+      // BUKAN sejak struk dibuka - biar konsisten walau struk ditutup lalu dibuka lagi).
+      createdAtMs: saved.CreatedAt ? new Date(saved.CreatedAt).getTime() : Date.now(),
+      // BARU (integrasi QRIS ASLI via iPaymu) - kosong semua kalau bayar==='COD',
+      // atau kalau chargeQris sempat gagal di server (StatusBayar tetap '' - lihat
+      // fallback try/catch PesananOnlineService.buatPesananPublik). `qrisQrString` =
+      // payload EMV mentah, DIRENDER JADI GAMBAR DI BROWSER (lib qrcode.js, lihat
+      // openReceiptOrder) - iPaymu TIDAK sediakan gambar QR siap pakai seperti Midtrans dulu.
+      qrisQrString: saved.QrisQrString || '',
+      qrisExpiredAt: saved.QrisExpiredAt || '',
+      // BARU (metode bayar Virtual Account via iPaymu) - kosong semua kalau
+      // bayar!=='VA', atau kalau chargeVa sempat gagal di server (pola sama fallback
+      // qrisQrString di atas). `vaBank` dipakai frontend nampilin nama bank di struk.
+      vaBank: saved.VaBank || '',
+      vaNumber: saved.VaNumber || '',
+      vaExpiredAt: saved.VaExpiredAt || '',
+      statusBayar: saved.StatusBayar || ''
+    };
+    state.orders.push(order);
+    saveGuestOrders();
+    state.cart = {};
+    // Member: cuma Nama yang keisi otomatis buat checkout berikutnya, No WhatsApp
+    // sengaja dikosongin (isi manual tiap kali) - lihat catatan di loginSuccess().
+    // Tamu: dikosongin kayak semula.
+    state.form = state.auth.status==='member'
+      ? { nama: state.auth.pelanggan.nama, wa:'', alamat:'', catatan:'', poinDigunakan:'' }
+      : { nama:'', wa:'', alamat:'', catatan:'', poinDigunakan:'' };
+    state.method = 'ambil';
+    state.payment = 'cod';
+    state.vaBank = '';
+    state.submitting = false;
+    closeCheckout();
+    refresh();
+    // refresh stok terbaru dari server (stok belum dipotong, tapi produk lain
+    // bisa saja berubah sementara customer checkout) - non-blocking, struk
+    // tetap tampil langsung pakai data `saved` di atas.
+    loadKatalog();
+    if(state.auth.status==='member'){
+      loadRiwayatPelanggan(); // update riwayat server, non-blocking
+      // Fitur Tukar Poin (BARU) - saldo di kartu "Poin Member" tab Akun bisa saja
+      // berkurang dari checkout barusan, refresh biar tidak nampilin angka basi.
+      loadPoinMember();
+    }
+    openReceiptOrder(order);
+  }catch(e){
+    state.submitting = false;
+    showCheckoutError(e.message || 'Gagal mengirim pesanan. Coba lagi.');
+    if(btn){ btn.disabled = false; btn.textContent = 'Kirim Pesanan'; }
+  }
+}
+
+function showCheckoutError(msg){
+  const body = document.getElementById('checkout-body');
+  if(!body) return;
+  let el = document.getElementById('checkout-error');
+  if(!el){
+    el = document.createElement('div');
+    el.id = 'checkout-error';
+    el.style.cssText = 'color:hsl(var(--red));font-size:12.5px;margin-top:10px;text-align:center';
+    body.appendChild(el);
+  }
+  el.textContent = msg;
+}
+function hideCheckoutError(){
+  const el = document.getElementById('checkout-error');
+  if(el) el.remove();
+}
+
+/* ================================================================
+   AKUN / LOGIN MEMBER + TAMU
+   ================================================================
+   Kontrak backend (BELUM ada di GAS kamu sekarang, perlu ditambahin -
+   lihat catatan di akhir chat):
+     apiLoginPelangganPublik({wa, pin})
+       -> data: { terdaftar:boolean, valid:boolean, pelanggan:{id,nama,wa}|null }
+     apiDaftarPelangganPublik({nama, wa, pin})
+       -> data: { pelanggan:{id,nama,wa} }
+     apiRiwayatPesananPelangganPublik({pelangganId})
+       -> data: [ {Kode,Pelanggan,Tipe,Total,Status,CreatedAt,Items:[{nama,qty,harga}]}, ... ]
+     apiBuatPesananOnlinePublik(...) ditambah param opsional `pelangganId`
+       supaya pesanan kepasang ke akun member (dilewatin null kalau Tamu).
+   ================================================================ */
+function openAuth(){
+  state.authOpen = true;
+  state.authMode = 'login';
+  state.authForm = { wa:'', pin:'', nama:'' };
+  state.authError = null;
+  document.getElementById('auth-overlay').setAttribute('data-open','true');
+  renderAuthBody();
+  document.body.style.overflow='hidden';
+}
+function closeAuth(){
+  state.authOpen = false;
+  document.getElementById('auth-overlay').setAttribute('data-open','false');
+  document.body.style.overflow='';
+}
+function setAuthMode(mode){ state.authMode = mode; state.authError = null; renderAuthBody(); }
+
+function renderAuthBody(){
+  const body = document.getElementById('auth-body');
+  if(!body) return;
+  const f = state.authForm;
+  const isDaftar = state.authMode==='daftar';
+  body.innerHTML = `
+    <h2>${isDaftar ? 'Daftar Member Baru' : 'Masuk Member'}</h2>
+    <div class="auth-tabs">
+      <button class="auth-tab" data-action="set-auth-mode" data-mode="login" data-active="${!isDaftar}">Masuk</button>
+      <button class="auth-tab" data-action="set-auth-mode" data-mode="daftar" data-active="${isDaftar}">Daftar Baru</button>
+    </div>
+    <div class="auth-hint">${isDaftar ? 'Nomor kamu belum terdaftar sebagai member. Lengkapi nama buat daftar sekaligus masuk.' : 'Masuk pakai nomor WhatsApp & PIN member kamu. Belum punya akun? Pindah ke tab "Daftar Baru", nanti otomatis kedeteksi juga kalau nomornya belum member.'}</div>
+    ${state.authError ? '<div class="auth-error">'+esc(state.authError)+'</div>' : ''}
+    ${isDaftar ? '<div class="field"><label for="auth-nama">Nama</label><input id="auth-nama" type="text" placeholder="Nama kamu" value="'+esc(f.nama)+'"></div>' : ''}
+    <div class="field"><label for="auth-wa">Nomor WhatsApp</label><input id="auth-wa" type="tel" placeholder="08xx-xxxx-xxxx" value="${esc(f.wa)}"></div>
+    <div class="field"><label for="auth-pin">PIN (4-6 digit)</label><input id="auth-pin" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="6" placeholder="••••" value="${esc(f.pin)}"></div>
+    <button class="submit-btn" id="auth-submit-btn" data-action="submit-auth" ${state.authSubmitting?'disabled':''}>${state.authSubmitting ? 'Memproses...' : (isDaftar ? 'Daftar & Masuk' : 'Masuk')}</button>
+    <div class="guest-link-row">atau <button class="link-btn" data-action="close-auth">Masuk sebagai Tamu</button></div>
+  `;
+  ['nama','wa','pin'].forEach(key=>{
+    const elm = document.getElementById('auth-'+key);
+    if(!elm) return;
+    elm.addEventListener('input', e=>{ state.authForm[key]=e.target.value; });
+  });
+}
+
+async function submitAuth(){
+  if(state.authSubmitting) return;
+  const f = state.authForm;
+  const wa = f.wa.trim();
+  const pin = f.pin.trim();
+  if(!wa || !pin){ state.authError='Nomor WhatsApp & PIN wajib diisi.'; renderAuthBody(); return; }
+  if(!/^[0-9]{4,6}$/.test(pin)){ state.authError='PIN harus 4-6 digit angka.'; renderAuthBody(); return; }
+
+  state.authSubmitting = true;
+  state.authError = null;
+  renderAuthBody();
+
+  try{
+    if(state.authMode==='daftar'){
+      const nama = f.nama.trim();
+      if(!nama) throw new Error('Nama wajib diisi.');
+      const data = await api('apiDaftarPelangganPublik', { nama, wa, pin });
+      loginSuccess(data);
+    } else {
+      const data = await api('apiLoginPelangganPublik', { wa, pin });
+      if(!data.terdaftar){
+        // Nomor belum jadi member -> otomatis pindah ke form daftar (PIN & WA dibawa).
+        state.authMode = 'daftar';
+        state.authError = 'Nomor belum terdaftar sebagai member. Lengkapi nama buat daftar.';
+        state.authSubmitting = false;
+        renderAuthBody();
+        return;
+      }
+      if(!data.valid) throw new Error('PIN salah. Coba lagi.');
+      loginSuccess(data.pelanggan);
+    }
+  }catch(e){
+    state.authSubmitting = false;
+    state.authError = e.message || 'Gagal memproses. Coba lagi.';
+    renderAuthBody();
+  }
+}
+
+function loginSuccess(pelanggan){
+  state.auth = { status:'member', pelanggan: pelanggan };
+  saveAuthSession(pelanggan);
+  state.authSubmitting = false;
+  closeAuth();
+  // Isi otomatis Nama saja dari data member - No WhatsApp SENGAJA tidak diisi
+  // otomatis, pelanggan isi manual tiap checkout.
+  state.form.nama = pelanggan.nama || state.form.nama;
+  loadRiwayatPelanggan();
+  loadPoinMember();
+  refresh();
+}
+
+function logout(){
+  state.auth = { status:'guest', pelanggan:null };
+  clearAuthSession();
+  state.riwayatPelanggan = [];
+  state.riwayatError = null;
+  state.poinMember = null;
+  state.poinError = null;
+  refresh();
+}
+
+/* ================================================================
+   ADMIN — ubah Nama Toko, Alamat & Nomor WhatsApp
+   ================================================================ */
+function openAdmin(){
+  state.adminOpen = true;
+  state.adminStep = 'pin';
+  state.adminForm = { pin:'', nama: STORE.nama, whatsapp: STORE.whatsapp, alamat: STORE.alamat, logo: STORE.logo };
+  state.adminError = null;
+  document.getElementById('admin-overlay').setAttribute('data-open','true');
+  renderAdminBody();
+  document.body.style.overflow='hidden';
+}
+function closeAdmin(){
+  state.adminOpen = false;
+  document.getElementById('admin-overlay').setAttribute('data-open','false');
+  document.body.style.overflow='';
+}
+
+function renderAdminBody(){
+  const body = document.getElementById('admin-body');
+  if(!body) return;
+  const f = state.adminForm;
+
+  if(state.adminStep==='pin'){
+    body.innerHTML = `
+      <h2>Masuk sebagai Admin</h2>
+      <div class="admin-note">Masukkan PIN admin buat ubah Nama Toko, Alamat & Nomor WhatsApp yang dipakai di app ini.</div>
+      ${state.adminError ? '<div class="auth-error">'+esc(state.adminError)+'</div>' : ''}
+      <div class="field"><label for="admin-pin">PIN Admin</label><input id="admin-pin" type="password" inputmode="numeric" placeholder="••••••" value="${esc(f.pin)}"></div>
+      <button class="submit-btn" data-action="submit-admin-pin">Masuk</button>
+      <div class="guest-link-row">atau <button class="link-btn" data-action="close-admin">Batal</button></div>
+    `;
+    const pinElm = document.getElementById('admin-pin');
+    pinElm.addEventListener('input', e=>{ state.adminForm.pin = e.target.value; });
+    pinElm.addEventListener('keydown', e=>{ if(e.key==='Enter') submitAdminPin(); });
+    pinElm.focus();
+    return;
+  }
+
+  body.innerHTML = `
+    <h2>Pengaturan Toko</h2>
+    <div class="admin-note">Perubahan disimpan di server dan otomatis berlaku di semua perangkat yang buka link toko ini (header, tombol WhatsApp, dll) — bukan cuma di HP/browser ini.</div>
+    ${state.adminError ? '<div class="auth-error">'+esc(state.adminError)+'</div>' : ''}
+    <div class="field">
+      <label>Logo Toko</label>
+      <div class="admin-logo-row">
+        <div class="admin-logo-preview">${f.logo ? '<img src="'+f.logo+'" alt="Logo">' : esc((f.nama||'?').charAt(0))}</div>
+        <div class="admin-logo-actions">
+          <label class="btn-outline admin-logo-upload">Pilih Gambar<input id="admin-logo-file" type="file" accept="image/*" style="display:none"></label>
+          ${f.logo ? '<button type="button" class="link-btn" data-action="remove-admin-logo">Hapus Logo</button>' : ''}
+        </div>
+      </div>
+      <div class="admin-note" style="margin:6px 0 0">Gambar persegi lebih rapi (jadi bulat otomatis). Maks ±300KB.</div>
+    </div>
+    <div class="field"><label for="admin-nama">Nama Toko</label><input id="admin-nama" type="text" placeholder="Nama toko" value="${esc(f.nama)}"></div>
+    <div class="field"><label for="admin-wa">Nomor WhatsApp Toko</label><input id="admin-wa" type="tel" placeholder="62xxxxxxxxxx" value="${esc(f.whatsapp)}"></div>
+    <div class="admin-note" style="margin-top:-6px">Format: diawali <strong>62</strong>, tanpa spasi/strip/tanda plus. Contoh: 6281234567890.</div>
+    <div class="field"><label for="admin-alamat">Alamat Toko</label><textarea id="admin-alamat" rows="2" placeholder="Jalan, nomor, patokan">${esc(f.alamat)}</textarea></div>
+    <button class="submit-btn" data-action="submit-admin-save" ${state.adminSaving?'disabled':''}>${state.adminSaving?'Menyimpan…':'Simpan Perubahan'}</button>
+    <div class="guest-link-row">atau <button class="link-btn" data-action="close-admin">Batal</button></div>
+  `;
+  ['nama','whatsapp','alamat'].forEach(key=>{
+    const elm = document.getElementById(key==='nama' ? 'admin-nama' : (key==='whatsapp' ? 'admin-wa' : 'admin-alamat'));
+    if(!elm) return;
+    elm.addEventListener('input', e=>{ state.adminForm[key]=e.target.value; });
+  });
+  const fileElm = document.getElementById('admin-logo-file');
+  if(fileElm){
+    fileElm.addEventListener('change', e=>{
+      const file = e.target.files && e.target.files[0];
+      if(!file) return;
+      if(!file.type.startsWith('image/')){ state.adminError='File harus berupa gambar.'; renderAdminBody(); return; }
+      if(file.size > 400*1024){ state.adminError='Ukuran gambar kegedean. Pakai yang di bawah ±300KB.'; renderAdminBody(); return; }
+      const reader = new FileReader();
+      reader.onload = ()=>{ state.adminForm.logo = reader.result; state.adminError=null; renderAdminBody(); };
+      reader.onerror = ()=>{ state.adminError='Gagal membaca file gambar. Coba lagi.'; renderAdminBody(); };
+      reader.readAsDataURL(file);
+    });
+  }
+}
+
+function submitAdminPin(){
+  const pin = state.adminForm.pin.trim();
+  if(pin !== ADMIN_PIN){
+    state.adminError = 'PIN salah. Coba lagi.';
+    state.adminForm.pin = '';
+    renderAdminBody();
+    return;
+  }
+  state.adminStep = 'form';
+  state.adminError = null;
+  renderAdminBody();
+}
+
+async function submitAdminSave(){
+  const nama = state.adminForm.nama.trim();
+  const whatsapp = state.adminForm.whatsapp.trim().replace(/[\s\-+]/g,'');
+  const alamat = state.adminForm.alamat.trim();
+  if(!nama){ state.adminError='Nama toko wajib diisi.'; renderAdminBody(); return; }
+  if(!/^62[0-9]{8,13}$/.test(whatsapp)){ state.adminError='Nomor WhatsApp harus diawali 62 dan hanya angka (contoh: 6281234567890).'; renderAdminBody(); return; }
+  if(!alamat){ state.adminError='Alamat toko wajib diisi.'; renderAdminBody(); return; }
+
+  state.adminSaving = true;
+  state.adminError = null;
+  renderAdminBody();
+  try{
+    // BARU: simpan ke server (bukan localStorage) - PIN dikirim ulang di sini
+    // biar server yang jadi penentu akhir boleh/gaknya perubahan tersimpan
+    // (lihat catatan ADMIN_PIN di atas + fungsi updatePengaturanToko di Apps Script).
+    const saved = await api('updatePengaturanToko', {
+      pin: state.adminForm.pin,
+      nama, whatsapp, alamat,
+      logo: state.adminForm.logo || ''
+    });
+    STORE.nama = saved.nama || nama;
+    STORE.whatsapp = saved.whatsapp || whatsapp;
+    STORE.alamat = saved.alamat || alamat;
+    STORE.logo = saved.logo || '';
+    state.adminSaving = false;
+    closeAdmin();
+    applyStoreBranding(); // update header dsb di device INI juga, tanpa nunggu reload
+    showToast('Pengaturan toko disimpan & langsung berlaku di semua perangkat.');
+  }catch(e){
+    state.adminSaving = false;
+    state.adminError = e.message || 'Gagal menyimpan ke server. Coba lagi.';
+    renderAdminBody();
+  }
+}
+
+function showToast(msg){
+  state.toast = msg;
+  const el = document.getElementById('toast');
+  if(!el) return;
+  el.textContent = msg;
+  el.setAttribute('data-open','true');
+  clearTimeout(showToast._t);
+  showToast._t = setTimeout(()=>{ el.setAttribute('data-open','false'); }, 2600);
+}
+
+// Label tampilan utk PESANAN_ONLINE_STATUS (Constants.js backend) - kode mentah dari
+// server BARU/DIPROSES/DIANTAR/SELESAI, bukan teks Indonesia siap tampil.
+const PESANAN_STATUS_LABEL = {
+  BARU: 'Menunggu konfirmasi',
+  DIPROSES: 'Diproses toko',
+  DIANTAR: 'Sedang diantar',
+  SELESAI: 'Selesai'
+};
+
+/**
+ * QRIS/VA yang belum terverifikasi (StatusBayar masih 'PENDING') tampilkan "Menunggu
+ * Pembayaran" (bukan "Menunggu konfirmasi") - toko belum bisa proses sebelum bayar
+ * masuk, dan kartu ini yang diklik customer buat lanjut bayar (lihat tabPesanan()).
+ * @param {string} status kode PESANAN_ONLINE_STATUS mentah dari server
+ * @param {string} bayar 'QRIS' | 'VA' | 'COD'
+ * @param {string} statusBayar 'PENDING' | 'PAID' | 'EXPIRED' | 'FAILED' | ''
+ * @return {string}
+ */
+function orderStatusLabel(status, bayar, statusBayar){
+  if((bayar==='QRIS' || bayar==='VA') && statusBayar==='PENDING') return 'Menunggu Pembayaran';
+  return PESANAN_STATUS_LABEL[status] || status || 'Menunggu konfirmasi';
+}
+function orderBelumBayar(bayar, statusBayar){
+  return (bayar==='QRIS' || bayar==='VA') && statusBayar==='PENDING';
+}
+
+async function loadRiwayatPelanggan(){
+  if(state.auth.status!=='member') return;
+  state.riwayatLoading = true;
+  state.riwayatError = null;
+  refresh();
+  try{
+    const data = await api('apiRiwayatPesananPelangganPublik', { pelangganId: state.auth.pelanggan.id });
+    state.riwayatPelanggan = (data||[]).map(o=>({
+      nomor: o.Kode,
+      nama: o.Pelanggan || state.auth.pelanggan.nama,
+      wa: o.Kontak || state.auth.pelanggan.wa,
+      metode: o.Tipe==='Delivery' ? 'antar' : 'ambil',
+      alamat: o.Alamat || '',
+      catatan: o.Catatan || '',
+      items: (o.Items||[]).map(it=>({ nama: it.nama, qty: it.qty, harga: it.harga })),
+      jumlahItem: (o.Items||[]).reduce((s,it)=>s+it.qty,0),
+      total: o.Total,
+      statusMentah: o.Status,
+      status: orderStatusLabel(o.Status, o.MetodeBayar, o.StatusBayar),
+      belumBayar: orderBelumBayar(o.MetodeBayar, o.StatusBayar),
+      bayar: o.MetodeBayar || 'COD',
+      statusBayar: o.StatusBayar || '',
+      qrisQrString: o.QrisQrString || '',
+      qrisExpiredAt: o.QrisExpiredAt || '',
+      vaBank: o.VaBank || '',
+      vaNumber: o.VaNumber || '',
+      vaExpiredAt: o.VaExpiredAt || '',
+      waktu: o.CreatedAt ? new Date(o.CreatedAt).toLocaleString('id-ID',{dateStyle:'medium',timeStyle:'short'}) : '',
+      createdAtMs: o.CreatedAt ? new Date(o.CreatedAt).getTime() : Date.now()
+    }));
+  }catch(e){
+    state.riwayatError = e.message || 'Gagal memuat riwayat pesanan.';
+  }
+  state.riwayatLoading = false;
+  refresh();
+}
+
+/**
+ * Ambil ringkasan Poin/Tier member loyalty (Sheet_Member RMS, BUKAN akun login webapp -
+ * lihat komentar PelangganOnlineController.apiPoinMemberPelangganPublik) buat nomor WA
+ * akun yang lagi login. Pola sama loadRiwayatPelanggan() di atas: dipanggil habis login
+ * sukses, habis restore sesi localStorage, dan tombol "Coba Lagi" kalau gagal.
+ */
+async function loadPoinMember(){
+  if(state.auth.status!=='member') return;
+  state.poinLoading = true;
+  state.poinError = null;
+  refresh();
+  try{
+    state.poinMember = await api('apiPoinMemberPelangganPublik', { wa: state.auth.pelanggan.wa });
+  }catch(e){
+    state.poinError = e.message || 'Gagal memuat data poin.';
+  }
+  state.poinLoading = false;
+  refresh();
+}
+
+/**
+ * Tombol "Tunjukkan ke Kasir" di kartu Poin Member - render QR nomor WhatsApp akun
+ * (BUKAN NomorMember) karena panel Member POS (§4.10) cari member lewat
+ * `apiSearchMemberByPhone` pakai nomor HP, bukan scan Nomor Member manapun - QR nomor WA
+ * jadi yang paling langsung berguna buat kasir. Reuse lib qrcode.js (davidshimjs) yang
+ * sama dipakai renderQrisCanvas_, elemen target beda (#member-qr-canvas) biar tidak
+ * bentrok kalau suatu saat kedua dialog somehow terbuka bersamaan.
+ */
+function openMemberBarcode(){
+  const p = state.auth.pelanggan;
+  const m = state.poinMember;
+  if(!p || !m || !m.terdaftar) return;
+  const body = document.getElementById('member-barcode-body');
+  body.innerHTML = `
+    <h2>Kartu Member</h2>
+    <div class="qris-box">
+      <div id="member-qr-canvas" style="width:180px;height:180px;margin:0 auto 10px;background:#fff;border-radius:8px;overflow:hidden"></div>
+      <div class="qris-total font-mono">${esc(p.wa)}</div>
+      <div class="qris-note">${esc(p.nama)} · Nomor Member ${esc(m.nomorMember)}</div>
+      <div class="qris-note" style="margin-top:8px">Tunjukkan layar ini ke kasir buat pakai poin/tier member kamu.</div>
+    </div>
+    <div class="guest-link-row"><button class="link-btn" data-action="close-member-barcode">Tutup</button></div>
+  `;
+  document.getElementById('member-barcode-overlay').setAttribute('data-open','true');
+  document.body.style.overflow='hidden';
+  const el = document.getElementById('member-qr-canvas');
+  if(el && typeof QRCode!=='undefined'){
+    new QRCode(el, { text: p.wa, width:180, height:180, correctLevel: QRCode.CorrectLevel.M });
+  }
+}
+function closeMemberBarcode(){
+  document.getElementById('member-barcode-overlay').setAttribute('data-open','false');
+  document.body.style.overflow='';
+}
+
+/**
+ * Tombol "Batalkan Pesanan" (member, kartu Riwayat Pesanan) - hanya muncul selagi
+ * Status server masih BARU (lihat tabPesanan). Server (`batalkanPesananPublik`) tetap
+ * jadi validasi akhir kalau ternyata sudah keburu diproses toko di antara render &
+ * klik. Sukses -> muat ulang riwayat dari server (baris DIBATALKAN otomatis tersaring
+ * keluar oleh `riwayatByPelanggan`, sama seperti pesanan lama yang sudah selesai).
+ * @param {string|number} idx index di state.riwayatPelanggan
+ */
+async function batalkanPesananMember(idx){
+  const order = state.riwayatPelanggan[Number(idx)];
+  if(!order) return;
+  if(!confirm('Batalkan pesanan '+order.nomor+'? Tindakan ini tidak bisa dibatalkan.')) return;
+  try{
+    await api('apiBatalkanPesananPublik', { kode: order.nomor });
+    showToast('Pesanan '+order.nomor+' berhasil dibatalkan.');
+    await loadRiwayatPelanggan();
+  }catch(e){
+    showToast(e.message || 'Gagal membatalkan pesanan.');
+  }
+}
+
+/**
+ * Tombol "Batalkan Pesanan" (Tamu, riwayat lokal) - lihat catatan `bisaBatal` di
+ * tabPesanan() soal kenapa tombol ini TIDAK dicek terhadap Status server dulu (riwayat
+ * Tamu tidak pernah menarik ulang Status). Server tetap validasi akhir; kalau ternyata
+ * sudah diproses toko, pesan error server ditampilkan apa adanya lewat toast, tombol
+ * TIDAK disembunyikan (retry manual masih mungkin kalau errornya cuma gangguan
+ * jaringan sesaat).
+ * @param {string|number} idx index di state.orders
+ */
+async function batalkanPesananTamu(idx){
+  const order = state.orders[Number(idx)];
+  if(!order) return;
+  if(!confirm('Batalkan pesanan '+order.nomor+'? Tindakan ini tidak bisa dibatalkan.')) return;
+  try{
+    await api('apiBatalkanPesananPublik', { kode: order.nomor });
+    order.dibatalkan = true;
+    saveGuestOrders();
+    showToast('Pesanan '+order.nomor+' berhasil dibatalkan.');
+    refresh();
+  }catch(e){
+    showToast(e.message || 'Gagal membatalkan pesanan.');
+  }
+}
+
+/* ================================================================
+   RECEIPT / STRUK
+   ================================================================ */
+function openReceipt(idx){ openReceiptOrder(state.orders[Number(idx)]); }
+function openReceiptMember(idx){ openReceiptOrder(state.riwayatPelanggan[Number(idx)]); }
+function openReceiptOrder(order){
+  state.receiptOrder = order;
+  const body = document.getElementById('receipt-body');
+  const isQris = order.bayar==='QRIS';
+  const isVa = order.bayar==='VA';
+  const qrisFailed = isQris && !order.qrisQrString; // chargeQris gagal di server, lihat fallback try/catch server
+  const vaFailed = isVa && !order.vaNumber; // chargeVa gagal di server, lihat fallback try/catch server
+  const bayarLabel = isQris ? 'QRIS' : (isVa ? 'Virtual Account '+(VA_BANKS[order.vaBank]||order.vaBank) : 'Tempat (COD)');
+  body.innerHTML = `
+    <div class="receipt-edge"></div>
+    <div class="receipt-body">
+      <button class="close-x" data-action="close-receipt" aria-label="Tutup">${icon('x')}</button>
+      <div class="receipt-eyebrow">${esc(STORE.nama)}</div>
+      <div class="receipt-msg">Pesanan diterima!</div>
+      <div class="receipt-num">${order.nomor}</div>
+      <div class="receipt-div"></div>
+      <div class="receipt-items">
+        ${order.items.map(it=>`<div style="display:flex;justify-content:space-between;gap:8px"><span>${it.qty}x ${esc(it.nama)}</span><span>${rupiah(it.harga*it.qty)}</span></div>`).join('')}
+      </div>
+      <div class="receipt-div"></div>
+      <div class="receipt-detail">
+        <div>a.n. : ${esc(order.nama)}</div>
+        <div>Metode : ${order.metode==='ambil'?'Ambil di Toko':'Diantar'}</div>
+        <div>Bayar : ${bayarLabel}</div>
+        ${order.alamat ? '<div>Alamat : '+esc(order.alamat)+'</div>' : ''}
+        <div>Waktu : ${esc(order.waktu)}</div>
+        <div style="display:flex;justify-content:space-between;font-weight:700;margin-top:6px"><span>Total</span><span>${rupiah(order.total)}</span></div>
+      </div>
+      <div class="receipt-div"></div>
+      ${isQris && !qrisFailed ? `
+        <div class="qris-box" id="qris-payment-box">
+          <div id="qris-timer" class="qris-timer"></div>
+          <div id="qris-canvas" style="width:180px;height:180px;margin:0 auto 10px;background:#fff;border-radius:8px;overflow:hidden"></div>
+          <div class="qris-total">${rupiah(order.total)}</div>
+          <div id="qris-status-badge" class="qris-note" style="font-weight:600">Menunggu pembayaran...</div>
+          <div class="qris-note">Scan pakai aplikasi bank/e-wallet apa saja. Status di atas otomatis berubah begitu pembayaran terverifikasi, tidak perlu kirim bukti manual.</div>
+          <button class="btn-outline" data-action="download-qris" data-order-nomor="${esc(order.nomor)}" style="width:100%;margin-top:10px">${icon('download')} Unduh QR</button>
+        </div>
+      ` : ''}
+      ${qrisFailed ? `
+        <div class="qris-box"><div class="qris-missing">Gagal membuat kode QRIS otomatis untuk pesanan ini. Silakan bayar lewat transfer manual, lalu kirim bukti ke WhatsApp toko.</div></div>
+        <a class="wa-btn" style="margin-bottom:12px" href="https://wa.me/${STORE.whatsapp}?text=${encodeURIComponent('Halo, saya mau bayar untuk pesanan '+order.nomor+' senilai '+rupiah(order.total)+'.')}" target="_blank" rel="noopener">${icon('whatsapp')} Hubungi Toko lewat WhatsApp</a>
+      ` : ''}
+      ${isVa && !vaFailed ? `
+        <div class="qris-box" id="va-payment-box">
+          <div id="qris-timer" class="qris-timer"></div>
+          <div class="qris-note" style="font-weight:600">Transfer Virtual Account ${esc(VA_BANKS[order.vaBank]||order.vaBank)}</div>
+          <div class="font-mono" id="va-number-text" style="font-size:20px;font-weight:700;letter-spacing:1px;margin:8px 0">${esc(order.vaNumber)}</div>
+          <button class="btn-outline" data-action="copy-va-number" data-va-number="${esc(order.vaNumber)}" style="width:100%;margin-bottom:8px">Salin Nomor VA</button>
+          <div class="qris-total">${rupiah(order.total)}</div>
+          <div id="qris-status-badge" class="qris-note" style="font-weight:600">Menunggu pembayaran...</div>
+          <div class="qris-note">Transfer sejumlah tagihan persis lewat ATM/mobile banking bank ${esc(VA_BANKS[order.vaBank]||order.vaBank)}. Status di atas otomatis berubah begitu pembayaran terverifikasi, tidak perlu kirim bukti manual.</div>
+        </div>
+      ` : ''}
+      ${vaFailed ? `
+        <div class="qris-box"><div class="qris-missing">Gagal membuat nomor Virtual Account otomatis untuk pesanan ini. Silakan bayar lewat transfer manual, lalu kirim bukti ke WhatsApp toko.</div></div>
+        <a class="wa-btn" style="margin-bottom:12px" href="https://wa.me/${STORE.whatsapp}?text=${encodeURIComponent('Halo, saya mau bayar untuk pesanan '+order.nomor+' senilai '+rupiah(order.total)+'.')}" target="_blank" rel="noopener">${icon('whatsapp')} Hubungi Toko lewat WhatsApp</a>
+      ` : ''}
+      <div class="receipt-note">Simpan nomor pesanan ini. Toko akan menghubungi kamu via WhatsApp untuk konfirmasi.</div>
+    </div>
+    <div class="receipt-edge bottom"></div>
+  `;
+  document.getElementById('receipt-overlay').setAttribute('data-open','true');
+  document.body.style.overflow='hidden';
+
+  if(isQris && !qrisFailed){
+    renderQrisCanvas_(order.qrisQrString);
+    startQrisCountdown_(order.createdAtMs);
+    if(order.statusBayar==='PENDING'){
+      startPaymentPolling(order.nomor);
+    }
+  }
+  if(isVa && !vaFailed){
+    startQrisCountdown_(order.createdAtMs);
+    if(order.statusBayar==='PENDING'){
+      startPaymentPolling(order.nomor);
+    }
+  }
+}
+
+/**
+ * Tombol "Salin Nomor VA" di struk - nomor VA cuma teks (beda dari QRIS yang butuh
+ * gambar), jadi cukup clipboard, tidak perlu unduh gambar seperti `downloadQrisImage_`.
+ * @param {string} nomor nomor VA (order.vaNumber)
+ */
+function copyVaNumber_(nomor){
+  if(!nomor) return;
+  navigator.clipboard.writeText(nomor)
+    .then(()=>showToast('Nomor VA disalin.'))
+    .catch(()=>showToast('Gagal menyalin, salin manual dari layar.'));
+}
+
+/**
+ * BARU (integrasi QRIS ASLI via iPaymu) - iPaymu API Direct cuma balikin payload EMV
+ * mentah (`qrisQrString`), BUKAN gambar QR siap pakai kayak Midtrans dulu (`qrisQrUrl`
+ * lama sudah dihapus dari alur ini) - gambar dirender di sini pakai lib qrcode.js
+ * (davidshimjs/qrcodejs, di-load lewat CDN di <head>) langsung ke div#qris-canvas.
+ * @param {string} qrString payload EMV mentah dari server (saved.QrisQrString)
+ */
+function renderQrisCanvas_(qrString){
+  const el = document.getElementById('qris-canvas');
+  if(!el || !qrString || typeof QRCode==='undefined') return;
+  el.innerHTML = '';
+  new QRCode(el, { text: qrString, width: 180, height: 180, correctLevel: QRCode.CorrectLevel.M });
+}
+
+/**
+ * Unduh gambar QR yang lagi ditampilkan (div#qris-canvas) sebagai file PNG. lib
+ * qrcode.js (davidshimjs) merender <canvas> - convert langsung ke data URL lewat
+ * toCanvas.toDataURL, tidak perlu fetch/panggil server lagi. Fallback ke <img> kalau
+ * browser lama dapat elemen img bukan canvas (perilaku lib ini di beberapa browser).
+ * @param {string} nomor kode pesanan, dipakai sebagai nama file
+ */
+function downloadQrisImage_(nomor){
+  const container = document.getElementById('qris-canvas');
+  const canvas = container && container.querySelector('canvas');
+  const img = container && container.querySelector('img');
+  const dataUrl = canvas ? canvas.toDataURL('image/png') : (img ? img.src : '');
+  if(!dataUrl){ showToast('QR belum siap, coba lagi sebentar.'); return; }
+  const a = document.createElement('a');
+  a.href = dataUrl;
+  a.download = 'QRIS-' + (nomor || 'pesanan') + '.png';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+}
+
+/**
+ * BARU (integrasi QRIS ASLI via iPaymu) - polling ringan tiap 5 detik selagi struk
+ * QRIS masih terbuka, baca kolom StatusBayar terbaru (diperbarui webhook iPaymu di
+ * server - lihat PesananOnlineService.cekStatusBayar). Berhenti otomatis kalau status
+ * sudah final (PAID/EXPIRED/FAILED) atau struk ditutup (closeReceipt di bawah).
+ * @param {string} kode Kode pesanan (order.nomor)
+ */
+function startPaymentPolling(kode){
+  stopPaymentPolling();
+  state.paymentPollInterval = setInterval(async () => {
+    let result;
+    try { result = await api('apiCekStatusPembayaranPesanan', { kode }); }
+    catch(e){ return; } // gagal 1x polling - diamkan, coba lagi polling berikutnya
+    const badge = document.getElementById('qris-status-badge');
+    if(!badge) { stopPaymentPolling(); return; } // struk sudah ditutup/beda pesanan
+
+    if(result.statusBayar === 'PAID'){
+      badge.textContent = 'Pembayaran diterima ✓';
+      badge.style.color = 'hsl(var(--green,#16a34a))';
+      stopPaymentPolling();
+    } else if(result.statusBayar === 'EXPIRED'){
+      badge.textContent = 'Kode QR kedaluwarsa - hubungi toko lewat WhatsApp.';
+      badge.style.color = 'hsl(var(--red))';
+      stopPaymentPolling();
+    } else if(result.statusBayar === 'FAILED'){
+      badge.textContent = 'Pembayaran gagal - hubungi toko lewat WhatsApp.';
+      badge.style.color = 'hsl(var(--red))';
+      stopPaymentPolling();
+    }
+    // 'PENDING' - biarkan polling lanjut, badge tetap "Menunggu pembayaran..."
+  }, 5000);
+}
+function stopPaymentPolling(){
+  if(state.paymentPollInterval){ clearInterval(state.paymentPollInterval); state.paymentPollInterval=null; }
+}
+
+/**
+ * Timer hitung mundur 24 jam di atas QR code, mulai dari `createdAtMs` pesanan (waktu
+ * pesanan di-klik/dibuat - saved.CreatedAt server, BUKAN waktu struk dibuka, biar
+ * konsisten walau struk ditutup lalu dibuka lagi berkali-kali). Update tiap detik,
+ * berhenti otomatis begitu habis (tampilkan "Kode QR kedaluwarsa") atau struk ditutup
+ * (closeReceipt di bawah) - pola sama `startPaymentPolling`/`stopPaymentPolling`.
+ * @param {number} createdAtMs timestamp epoch ms (order.createdAtMs)
+ */
+function startQrisCountdown_(createdAtMs){
+  stopQrisCountdown_();
+  const DURASI_MS = 24 * 60 * 60 * 1000;
+  const batasAkhir = (createdAtMs || Date.now()) + DURASI_MS;
+
+  const tick = () => {
+    const el = document.getElementById('qris-timer');
+    if(!el){ stopQrisCountdown_(); return; } // struk sudah ditutup/beda pesanan
+    const sisaMs = batasAkhir - Date.now();
+    if(sisaMs <= 0){
+      el.textContent = 'Kode QR kedaluwarsa';
+      el.setAttribute('data-expired','true');
+      stopQrisCountdown_();
+      return;
+    }
+    const jam = Math.floor(sisaMs / 3600000);
+    const menit = Math.floor((sisaMs % 3600000) / 60000);
+    const detik = Math.floor((sisaMs % 60000) / 1000);
+    const pad = n => String(n).padStart(2,'0');
+    el.textContent = 'Bayar dalam ' + pad(jam) + ':' + pad(menit) + ':' + pad(detik);
+  };
+  tick();
+  state.qrisCountdownInterval = setInterval(tick, 1000);
+}
+function stopQrisCountdown_(){
+  if(state.qrisCountdownInterval){ clearInterval(state.qrisCountdownInterval); state.qrisCountdownInterval=null; }
+}
+
+function closeReceipt(){
+  document.getElementById('receipt-overlay').setAttribute('data-open','false');
+  state.receiptOrder=null;
+  stopPaymentPolling();
+  stopQrisCountdown_();
+  document.body.style.overflow='';
+}
+
+/* ================================================================
+   EVENT DELEGATION — satu listener untuk semua interaksi klik
+   ================================================================ */
+document.addEventListener('click', function(e){
+  const t = e.target.closest('[data-action]');
+  if(!t) return;
+  const a = t.dataset.action;
+  if(a==='set-tab') setTab(t.dataset.tab);
+  else if(a==='set-category'){ setCategory(t.dataset.category); }
+  else if(a==='qty') changeQty(t.dataset.id, parseInt(t.dataset.delta,10));
+  else if(a==='open-cart') openCart();
+  else if(a==='close-cart') closeCart();
+  else if(a==='open-checkout') openCheckout();
+  else if(a==='close-checkout') closeCheckout();
+  else if(a==='set-method') setMethod(t.dataset.method);
+  else if(a==='set-payment') setPayment(t.dataset.payment);
+  else if(a==='set-va-bank') setVaBank(t.dataset.bank);
+  else if(a==='submit-order') submitOrder();
+  else if(a==='close-receipt') closeReceipt();
+  else if(a==='open-receipt') openReceipt(t.dataset.orderIndex);
+  else if(a==='open-receipt-member') openReceiptMember(t.dataset.orderIndex);
+  else if(a==='batalkan-pesanan-member') batalkanPesananMember(t.dataset.orderIndex);
+  else if(a==='batalkan-pesanan-tamu') batalkanPesananTamu(t.dataset.orderIndex);
+  else if(a==='download-qris') downloadQrisImage_(t.dataset.orderNomor);
+  else if(a==='copy-va-number') copyVaNumber_(t.dataset.vaNumber);
+  else if(a==='clear-search') clearSearch();
+  else if(a==='retry-katalog') loadKatalog();
+  else if(a==='open-auth') openAuth();
+  else if(a==='close-auth') closeAuth();
+  else if(a==='set-auth-mode') setAuthMode(t.dataset.mode);
+  else if(a==='submit-auth') submitAuth();
+  else if(a==='logout') logout();
+  else if(a==='retry-riwayat') loadRiwayatPelanggan();
+  else if(a==='open-admin') openAdmin();
+  else if(a==='close-admin') closeAdmin();
+  else if(a==='submit-admin-pin') submitAdminPin();
+  else if(a==='submit-admin-save') submitAdminSave();
+  else if(a==='remove-admin-logo'){ state.adminForm.logo=''; renderAdminBody(); }
+  else if(a==='retry-poin') loadPoinMember();
+  else if(a==='open-member-barcode') openMemberBarcode();
+  else if(a==='close-member-barcode') closeMemberBarcode();
+  else if(a==='open-legal') openLegal(t.dataset.legal);
+  else if(a==='close-legal') closeLegal();
+});
+document.addEventListener('keydown', function(e){
+  if(e.key==='Escape'){ closeCart(); closeCheckout(); closeReceipt(); closeAuth(); closeAdmin(); closeMemberBarcode(); closeLegal(); }
+});
+
+/* ================================================================
+   INIT
+   ================================================================ */
+const restoredSession = loadAuthSession();
+if(restoredSession){
+  state.auth = { status:'member', pelanggan: restoredSession };
+  state.form.nama = restoredSession.nama;
+}
+state.orders = loadGuestOrders();
+renderShell();
+loadKatalog();
+loadPengaturanToko(); // BARU: tarik Nama/Logo/Alamat/WA toko terbaru dari server, bukan localStorage
+if(restoredSession){
+  loadRiwayatPelanggan();
+  loadPoinMember();
+} else {
+  // Belum ada sesi member tersimpan -> begitu link dibuka, tampilkan halaman
+  // Masuk duluan. Pengunjung tetap bisa lanjut tanpa akun lewat tombol
+  // "Masuk sebagai Tamu" (atau tap di luar dialog) di dalam renderAuthBody().
+  openAuth();
+}
+
+/* ================================================================
+   PWA — daftar service worker + tombol "Install App"
+   ================================================================ */
+if('serviceWorker' in navigator){
+  window.addEventListener('load', function(){
+    navigator.serviceWorker.register('service-worker.js').catch(function(e){
+      console.warn('Gagal daftar service worker (offline shell tidak aktif):', e);
+    });
+  });
+}
+
+// Chrome/Android nahan event ini biar kita bisa munculin tombol install
+// custom sendiri (browser bawaannya nongol otomatis, tapi banner default
+// kadang ketutup atau muncul di waktu yang aneh) - lihat renderInstallButton().
+let deferredInstallPrompt = null;
+window.addEventListener('beforeinstallprompt', function(e){
+  e.preventDefault();
+  deferredInstallPrompt = e;
+  renderInstallButton();
+});
+window.addEventListener('appinstalled', function(){
+  deferredInstallPrompt = null;
+  const btn = document.getElementById('pwa-install-btn');
+  if(btn) btn.remove();
+});
+function renderInstallButton(){
+  if(document.getElementById('pwa-install-btn')) return;
+  const btn = document.createElement('button');
+  btn.id = 'pwa-install-btn';
+  btn.textContent = '📲 Install Aplikasi';
+  // bottom:96px sengaja di atas .bottom-nav (~58px) + .mini-cart (nongol tumpang
+  // tindih 58px dari bawah kalau keranjang lagi isi) supaya gak ketiban dua-duanya.
+  btn.style.cssText = 'position:fixed;left:16px;right:16px;max-width:460px;margin:0 auto;bottom:96px;z-index:40;'+
+    'background:hsl(var(--red));color:#fff;border:none;border-radius:999px;'+
+    'padding:12px 20px;font-family:inherit;font-weight:600;font-size:13.5px;'+
+    'box-shadow:0 6px 20px rgba(0,0,0,.22);cursor:pointer';
+  btn.onclick = async function(){
+    if(!deferredInstallPrompt) return;
+    btn.remove();
+    deferredInstallPrompt.prompt();
+    await deferredInstallPrompt.userChoice;
+    deferredInstallPrompt = null;
+  };
+  document.body.appendChild(btn);
+}
+</script>
+</body>
+</html>
