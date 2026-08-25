@@ -265,6 +265,15 @@ input,textarea{font-family:inherit}
 .cart-summary-row{display:flex;justify-content:space-between;align-items:center;font-weight:700;font-size:16px;margin-bottom:12px}
 .cart-summary-row .val{color:hsl(var(--red))}
 
+.ps-price{font-family:'Space Mono',monospace;font-weight:700;font-size:19px;color:hsl(var(--red));margin-bottom:14px}
+.ps-topping-list{margin-bottom:16px}
+.ps-topping-item{width:100%;display:flex;align-items:center;justify-content:space-between;gap:10px;border:1px solid hsl(var(--paper-line));border-radius:10px;padding:11px 12px;margin-bottom:8px;background:hsl(var(--card));color:hsl(var(--ink));font-size:13px;text-align:left}
+.ps-topping-item[data-active="true"]{border-color:hsl(var(--gold-ink));background:hsl(var(--gold)/.15)}
+.ps-topping-right{display:flex;align-items:center;gap:8px}
+.ps-topping-price{font-family:'Space Mono',monospace;color:hsl(var(--ink-soft));font-size:12px}
+.ps-topping-dot{display:inline-flex;width:18px;height:18px;border-radius:999px;border:1px solid hsl(var(--paper-line));flex-shrink:0}
+.ps-topping-item[data-active="true"] .ps-topping-dot{background:hsl(var(--gold-ink));border-color:hsl(var(--gold-ink))}
+
 .dialog{position:absolute;left:50%;top:50%;transform:translate(-50%,-46%) scale(.97);width:calc(100% - 32px);max-width:420px;max-height:86vh;overflow-y:auto;background:hsl(var(--card));border-radius:var(--r-lg);padding:20px;opacity:0;transition:transform var(--dur) ease-out,opacity var(--dur) ease-out}
 .overlay[data-open="true"] .dialog{transform:translate(-50%,-50%) scale(1);opacity:1}
 .dialog h2{font-family:'Fraunces',serif;font-size:26px;margin:0 0 14px}
@@ -611,6 +620,8 @@ const state = {
   cart: {},
   cartOpen: false,
   checkoutOpen: false,
+  productSheetId: null, // BARU: id produk yg lagi buka sheet Pilih Topping (mirror flow Kasir)
+  selectedTopping: [], // BARU: id topping kepilih sementara di sheet, direset tiap buka/tutup
   receiptOrder: null,
   method: 'ambil',
   payment: 'cod', // BARU: 'cod' (Bayar di Tempat) | 'qris' | 'va'
@@ -732,6 +743,15 @@ function renderShell(){
       </div>
     </div>
 
+    <div class="overlay" id="product-overlay">
+      <div class="overlay-backdrop" data-action="close-product-sheet"></div>
+      <div class="sheet">
+        <div class="sheet-handle"></div>
+        <div class="sheet-head"><h2 id="product-sheet-title">Produk</h2><button class="close-x" data-action="close-product-sheet" aria-label="Tutup">${icon('x')}</button></div>
+        <div class="sheet-body" id="product-sheet-body"></div>
+      </div>
+    </div>
+
     <div class="overlay" id="checkout-overlay">
       <div class="overlay-backdrop" data-action="close-checkout"></div>
       <div class="dialog" id="checkout-body"></div>
@@ -848,6 +868,17 @@ function promoCard(p){
   </div>`;
 }
 
+/* BARU: toko jual Seblak -> customer boleh pilih topping dulu sebelum masuk
+   keranjang, sama kayak flow di app Kasir (kategori "Seblak" + "Topping Seblak").
+   Ditentukan dari kategori produk, bukan hardcode nama produk, jadi ikut nurut
+   apapun yg didaftarin admin di katalog. */
+function toppingSeblakProducts(){
+  return PRODUCTS.filter(function(p){ return p.kategori==='Topping Seblak' && p.stok>0; });
+}
+function canPilihTopping(p){
+  return p.kategori==='Seblak' && toppingSeblakProducts().length>0;
+}
+
 function productCard(p){
   const qty = state.cart[p.id]||0;
   const habis = p.stok<=0;
@@ -868,7 +899,9 @@ function productCard(p){
       ${habis
         ? '<div class="stock-out">Stok habis</div>'
         : (qty===0
-          ? '<button class="btn-add" data-action="qty" data-id="'+p.id+'" data-delta="1">'+icon('plus')+' Tambah</button>'
+          ? (canPilihTopping(p)
+            ? '<button class="btn-add" data-action="open-product-sheet" data-id="'+p.id+'">'+icon('plus')+' Tambah</button>'
+            : '<button class="btn-add" data-action="qty" data-id="'+p.id+'" data-delta="1">'+icon('plus')+' Tambah</button>')
           : '<div class="qty-stepper"><button data-action="qty" data-id="'+p.id+'" data-delta="-1" aria-label="Kurangi">'+icon('minus')+'</button><span>'+qty+'</span><button data-action="qty" data-id="'+p.id+'" data-delta="1" '+(qty>=p.stok?'disabled':'')+' aria-label="Tambah">'+icon('plus')+'</button></div>')
       }
     </div>`;
@@ -1205,6 +1238,71 @@ function renderCartBody(){
       <div class="cart-summary-row"><span>Total</span><span class="val">${rupiah(cartTotal())}</span></div>
       <button class="submit-btn" data-action="open-checkout">Checkout</button>
     </div>
+  `;
+}
+
+/* ================================================================
+   PRODUCT SHEET — Pilih Topping (BARU, mirror flow app Kasir: kategori
+   "Seblak" nawarin topping "Topping Seblak" sebelum masuk keranjang;
+   ditawarin cuma sekali sebelum qty>0, abis itu stepper biasa)
+   ================================================================ */
+function openProductSheet(id){
+  const p = PRODUCTS.find(function(pr){ return pr.id===id; });
+  if(!p) return;
+  state.productSheetId = id;
+  state.selectedTopping = [];
+  document.getElementById('product-overlay').setAttribute('data-open','true');
+  renderProductSheetBody();
+  document.body.style.overflow='hidden';
+}
+function closeProductSheet(){
+  state.productSheetId = null;
+  state.selectedTopping = [];
+  document.getElementById('product-overlay').setAttribute('data-open','false');
+  document.body.style.overflow='';
+}
+function toggleTopping(id){
+  const idx = state.selectedTopping.indexOf(id);
+  if(idx>-1) state.selectedTopping.splice(idx,1);
+  else state.selectedTopping.push(id);
+  renderProductSheetBody();
+}
+function confirmAddTopping(){
+  const p = PRODUCTS.find(function(pr){ return pr.id===state.productSheetId; });
+  if(!p) return;
+  const cur = state.cart[p.id]||0;
+  state.cart[p.id] = Math.max(0, Math.min(p.stok, cur+1));
+  state.selectedTopping.forEach(function(tid){
+    const tp = PRODUCTS.find(function(pr){ return pr.id===tid; });
+    if(!tp) return;
+    const c = state.cart[tid]||0;
+    state.cart[tid] = Math.max(0, Math.min(tp.stok, c+1));
+  });
+  closeProductSheet();
+  refresh();
+}
+function renderProductSheetBody(){
+  const p = PRODUCTS.find(function(pr){ return pr.id===state.productSheetId; });
+  const titleEl = document.getElementById('product-sheet-title');
+  const body = document.getElementById('product-sheet-body');
+  if(!p || !body) return;
+  if(titleEl) titleEl.textContent = p.nama;
+  const toppings = toppingSeblakProducts();
+  body.innerHTML = `
+    <div class="ps-price">${rupiah(hargaAkhir(p))}</div>
+    ${toppings.length ? `
+      <div class="field-label-plain">Pilih Topping (opsional, boleh lebih dari satu)</div>
+      <div class="ps-topping-list">
+        ${toppings.map(function(t){
+          const active = state.selectedTopping.indexOf(t.id)>-1;
+          return '<button type="button" class="ps-topping-item" data-active="'+active+'" data-action="toggle-topping" data-id="'+t.id+'">'
+            +'<span>'+esc(t.nama.replace('Topping ',''))+'</span>'
+            +'<span class="ps-topping-right"><span class="ps-topping-price">+'+rupiah(t.harga)+'</span><span class="ps-topping-dot"></span></span>'
+            +'</button>';
+        }).join('')}
+      </div>
+    ` : ''}
+    <button class="submit-btn" data-action="confirm-add-topping">Tambah ke Keranjang</button>
   `;
 }
 
@@ -1785,6 +1883,10 @@ document.addEventListener('click', function(e){
   else if(a==='qty') changeQty(t.dataset.id, parseInt(t.dataset.delta,10));
   else if(a==='open-cart') openCart();
   else if(a==='close-cart') closeCart();
+  else if(a==='open-product-sheet') openProductSheet(t.dataset.id);
+  else if(a==='close-product-sheet') closeProductSheet();
+  else if(a==='toggle-topping') toggleTopping(t.dataset.id);
+  else if(a==='confirm-add-topping') confirmAddTopping();
   else if(a==='open-checkout') openCheckout();
   else if(a==='close-checkout') closeCheckout();
   else if(a==='set-method') setMethod(t.dataset.method);
@@ -1808,7 +1910,7 @@ document.addEventListener('click', function(e){
   else if(a==='close-legal') closeLegal();
 });
 document.addEventListener('keydown', function(e){
-  if(e.key==='Escape'){ closeCart(); closeCheckout(); closeReceipt(); closeAdmin(); closeLegal(); }
+  if(e.key==='Escape'){ closeCart(); closeCheckout(); closeReceipt(); closeAdmin(); closeLegal(); closeProductSheet(); }
 });
 
 /* ================================================================
