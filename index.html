@@ -430,6 +430,12 @@ const ADMIN_PIN = '190625';
  * PRODUCTS diisi async saat load, lihat loadKatalog() di bagian BACKEND. */
 let PRODUCTS = [];
 
+/** Foto kategori (dari layar "Foto Kategori" di Kasir) — Nama -> data URL
+ * base64. Diisi async lewat loadKategori(), dipakai buat nampilin gambar
+ * di chip kategori kalau ada. Kategori tanpa foto tetap tampil pakai style
+ * teks biasa (fallback), bukan error. */
+let CATEGORY_PHOTOS = {};
+
 /* Promo banner beranda — tampil sbg kartu yg bisa di-swipe kalau isinya >1.
    Kosongkan array ini (jadi []) kalau belum ada promo berjalan. Field
    `emoji` opsional, cuma aksen visual kecil di kartu. */
@@ -490,6 +496,23 @@ function mapProdukPublik(p) {
 }
 
 /**
+ * Load foto kategori dari backend (apiKategoriPublik). Gagal diam-diam
+ * (chip tetap tampil tanpa foto) — ini cuma pemanis visual, bukan data
+ * penting yang boleh nge-block katalog kalau error.
+ */
+async function loadKategori() {
+  try {
+    const data = await api('apiKategoriPublik', {});
+    const map = {};
+    (data || []).forEach(function (c) { if (c.Nama && c.Foto) map[c.Nama] = c.Foto; });
+    CATEGORY_PHOTOS = map;
+  } catch (e) {
+    console.warn('[anterin] gagal memuat foto kategori:', e.message);
+  }
+  renderTabContent();
+}
+
+/**
  * Load katalog produk publik dari backend. Dipanggil sekali saat init, dan
  * boleh dipanggil ulang manual (retry) kalau gagal.
  */
@@ -508,6 +531,7 @@ async function loadKatalog() {
   updateStatusPill();
   renderTabContent();
   renderMiniCart();
+  loadKategori();
 }
 
 /**
@@ -951,11 +975,17 @@ function tabBeranda(){
 
   const catHtml = cats.length ? `
     <div class="cat-quicklinks">
-      ${cats.slice(0,8).map(c=>`
+      ${cats.slice(0,8).map(c=>{
+        const foto = CATEGORY_PHOTOS[c];
+        const iconWrap = foto
+          ? `<span class="ic-wrap" style="overflow:hidden;padding:0"><img src="${esc(foto)}" alt="" style="width:100%;height:100%;object-fit:cover"></span>`
+          : `<span class="ic-wrap">${icon(CATEGORY_ICONS[c]||'tag')}</span>`;
+        return `
         <button class="cat-quick" data-action="set-category" data-category="${esc(c)}" onclick="setTab('belanja')">
-          <span class="ic-wrap">${icon(CATEGORY_ICONS[c]||'tag')}</span>
+          ${iconWrap}
           <span>${esc(c)}</span>
-        </button>`).join('')}
+        </button>`;
+      }).join('')}
     </div>` : '';
 
   if(PRODUCTS.length===0){
@@ -1002,7 +1032,11 @@ function tabBeranda(){
 function tabBelanja(){
   const cats = categoriesFromProducts();
   const list = filteredProducts();
-  const chips = cats.length>1 ? `<div class="h-scroll">${cats.map(c=>`<button class="chip" data-action="set-category" data-category="${esc(c)}" data-active="${c===state.category}">${esc(c)}</button>`).join('')}</div>` : '';
+  const chips = cats.length>1 ? `<div class="h-scroll">${cats.map(c=>{
+    const foto = CATEGORY_PHOTOS[c];
+    const thumb = foto ? `<img src="${esc(foto)}" alt="" style="width:18px;height:18px;border-radius:6px;object-fit:cover;margin-right:6px;vertical-align:middle">` : '';
+    return `<button class="chip" data-action="set-category" data-category="${esc(c)}" data-active="${c===state.category}">${thumb}${esc(c)}</button>`;
+  }).join('')}</div>` : '';
 
   let body;
   if(state.katalogLoading){
