@@ -626,7 +626,12 @@ function isStoreOpen(){
   return nowMin >= (oh*60+om) && nowMin < (ch*60+cm);
 }
 function categoriesFromProducts(){
-  const set = new Set(PRODUCTS.map(p=>p.kategori));
+  // "Topping Seblak" sengaja disembunyikan dari chip kategori - kategori ini
+  // cuma dipakai internal buat sheet "Pilih Topping" pas nambah Seblak ke
+  // keranjang (lihat toppingSeblakProducts()), bukan buat dipilih langsung
+  // sebagai kategori belanja.
+  const HIDDEN_CATEGORIES = ['Topping Seblak'];
+  const set = new Set(PRODUCTS.map(p=>p.kategori).filter(k => !HIDDEN_CATEGORIES.includes(k)));
   return ['Semua', ...Array.from(set)];
 }
 const CATEGORY_ICONS = {
