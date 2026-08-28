@@ -863,16 +863,46 @@ function refresh(){
   if(state.cartOpen) renderCartBody();
 }
 
-function setTab(tab){
+async function setTab(tab){
   state.tab = tab;
   renderTabContent();
   updateNavActive();
   renderMiniCart();
   window.scrollTo({top:0});
-  // Tab Pesanan dibuka & lagi login member -> tarik ulang riwayat dari server, biar
-  // perubahan status (mis. kasir baru tandai Selesai) langsung kelihatan tanpa perlu
-  // logout-login lagi. Non-blocking, tampilan lama tetap muncul dulu sambil nunggu.
+  // Tab Pesanan dibuka -> tarik ulang status tiap pesanan dari server, biar
+  // perubahan status (mis. kasir baru tandai Selesai) langsung kelihatan tanpa
+  // perlu logout-login/reload manual. Non-blocking: tampilan lama (dari
+  // localStorage) tetap muncul dulu, baru re-render kalau ada yang berubah.
+  if(tab === 'pesanan' && state.orders.length){
+    refreshOrderStatuses_();
+  }
+}
 
+/**
+ * Sinkronkan status tiap pesanan tersimpan (state.orders) dengan server lewat
+ * apiCekStatusPembayaranPesanan. Dipanggil saat tab Pesanan dibuka (lihat
+ * setTab). Gagal 1 pesanan (mis. sudah diarsip/dihapus) tidak menggagalkan
+ * pesanan lain - tetap lanjut cek sisanya.
+ */
+async function refreshOrderStatuses_(){
+  let changed = false;
+  for(const order of state.orders){
+    let result;
+    try{ result = await api('apiCekStatusPembayaranPesanan', { kode: order.nomor }); }
+    catch(e){ continue; } // pesanan ini gagal dicek, lanjut ke pesanan berikutnya
+    if(result.status && result.status !== order.status){
+      order.status = result.status;
+      changed = true;
+    }
+    if(result.statusBayar && result.statusBayar !== order.statusBayar){
+      order.statusBayar = result.statusBayar;
+      changed = true;
+    }
+  }
+  if(changed){
+    saveGuestOrders();
+    if(state.tab === 'pesanan') renderTabContent();
+  }
 }
 function setCategory(cat){ state.category = cat; renderTabContent(); }
 function clearSearch(){
