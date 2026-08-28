@@ -314,6 +314,21 @@ input,textarea{font-family:inherit}
 .receipt-items{text-align:left;font-size:11px;line-height:1.7;max-height:140px;overflow-y:auto}
 .receipt-note{font-size:10.5px;color:hsl(var(--ink-soft));line-height:1.6}
 
+/* ---------- Progress status pesanan (4 tahap) ---------- */
+.order-steps{display:flex;align-items:flex-start;text-align:left;margin:2px 0 14px}
+.order-step{flex:1;display:flex;flex-direction:column;align-items:center;position:relative;min-width:0}
+.order-step-dot{width:22px;height:22px;border-radius:999px;background:hsl(var(--paper-line));border:2px solid hsl(var(--paper-line));display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:hsl(var(--ink-soft));flex:none;transition:background var(--dur),border-color var(--dur),color var(--dur)}
+.order-step-line{position:absolute;top:10px;left:calc(-50% + 11px);width:calc(100% - 22px);height:2px;background:hsl(var(--paper-line));z-index:0}
+.order-step:first-child .order-step-line{display:none}
+.order-step-label{font-size:9.5px;color:hsl(var(--ink-soft));margin-top:5px;text-align:center;line-height:1.3;max-width:64px}
+.order-step[data-done="true"] .order-step-dot{background:hsl(var(--green));border-color:hsl(var(--green));color:#fff}
+.order-step[data-done="true"] .order-step-line{background:hsl(var(--green))}
+.order-step[data-current="true"] .order-step-dot{background:#fff;border-color:hsl(var(--green));color:hsl(var(--green));box-shadow:0 0 0 3px hsl(var(--green)/.18)}
+.order-step[data-current="true"] .order-step-label{color:hsl(var(--green));font-weight:700}
+.order-steps[data-cancelled="true"] .order-step-dot{background:hsl(var(--paper-line));border-color:hsl(var(--paper-line));color:hsl(var(--ink-soft))}
+.order-steps[data-cancelled="true"] .order-step-line{background:hsl(var(--paper-line))}
+.order-cancelled-banner{font-size:11.5px;font-weight:600;color:hsl(var(--red));background:hsl(var(--red)/.1);border-radius:10px;padding:8px 10px;margin:2px 0 14px;text-align:center}
+
 /* ---------- Akun member / login-daftar ---------- */
 .account-card{background:hsl(var(--card));border:1px solid hsl(var(--paper-line));border-radius:14px;padding:16px;margin:14px 16px 0}
 .account-card .who{display:flex;align-items:center;gap:12px}
@@ -403,7 +418,7 @@ const STORE = {
   // saja asal link gambar langsung/.png/.jpg). Dikosongkan = opsi QRIS tetap muncul
   // tapi kasih tau customer belum diatur, arahkan pilih Bayar di Tempat.
   qrisImageUrl: "",
-  logo: ""   // base64 data URI logo toko. Kosong = fallback huruf pertama nama toko.
+  logo: "https://lh3.googleusercontent.com/d/1mtxR9-PHe8XD442ABiXzSHSIqkv5BXzK"   // base64 data URI logo toko. Kosong = fallback huruf pertama nama toko.
 };
 
 /* ================================================================
@@ -902,6 +917,13 @@ async function refreshOrderStatuses_(){
   if(changed){
     saveGuestOrders();
     if(state.tab === 'pesanan') renderTabContent();
+    // Struk (receipt-overlay) lagi kebuka & nampilin salah satu order yang baru
+    // diupdate -> render ulang biar progress bar 4 tahapnya ikut ke-update tanpa
+    // customer perlu tutup-buka struk lagi.
+    if(state.receiptOrder && document.getElementById('receipt-overlay').getAttribute('data-open')==='true'){
+      const stillCurrent = state.orders.find(o=>o.nomor===state.receiptOrder.nomor);
+      if(stillCurrent) openReceiptOrder(stillCurrent);
+    }
   }
 }
 function setCategory(cat){ state.category = cat; renderTabContent(); }
@@ -1717,21 +1739,34 @@ function showToast(msg){
   showToast._t = setTimeout(()=>{ el.setAttribute('data-open','false'); }, 2600);
 }
 
-// Label tampilan utk PESANAN_ONLINE_STATUS (Constants.js backend) - kode mentah dari
-// server BARU/DIPROSES/DIANTAR/SELESAI, bukan teks Indonesia siap tampil.
+// Label tampilan utk status pesanan - nilai MENTAH dari server (kolom `status` di
+// sheet transactions, lihat pesananUpdateStatus_ di Apps Script backend), persis
+// 'Menunggu Konfirmasi' | 'Diproses' | 'Dikirim' | 'Selesai' | 'Dibatalkan' - BUKAN
+// kode singkat seperti versi lama, dipetakan ke label tampilnya.
 const PESANAN_STATUS_LABEL = {
-  BARU: 'Menunggu konfirmasi',
-  DIPROSES: 'Diproses toko',
-  DIANTAR: 'Sedang diantar',
-  SELESAI: 'Selesai'
+  'Menunggu Konfirmasi': 'Menunggu konfirmasi',
+  'Diproses': 'Diproses toko',
+  'Dikirim': 'Sedang diantar',
+  'Selesai': 'Selesai',
+  'Dibatalkan': 'Dibatalkan'
+};
+
+// 4 tahap linear buat progress bar di struk (lihat renderOrderSteps). 'Dibatalkan'
+// sengaja tidak masuk sini - ditangani terpisah (banner merah, bukan step).
+const PESANAN_STEP_ORDER = ['Menunggu Konfirmasi', 'Diproses', 'Dikirim', 'Selesai'];
+const PESANAN_STEP_LABEL = {
+  'Menunggu Konfirmasi': 'Menunggu\nKonfirmasi',
+  'Diproses': 'Diproses',
+  'Dikirim': 'Diantar',
+  'Selesai': 'Selesai'
 };
 
 /**
  * QRIS/VA yang belum terverifikasi (StatusBayar masih 'PENDING') tampilkan "Menunggu
  * Pembayaran" (bukan "Menunggu konfirmasi") - toko belum bisa proses sebelum bayar
  * masuk, dan kartu ini yang diklik customer buat lanjut bayar (lihat tabPesanan()).
- * @param {string} status kode PESANAN_ONLINE_STATUS mentah dari server
- * @param {string} bayar 'QRIS' | 'VA' | 'COD'
+ * @param {string} status status mentah dari server (kolom `status` sheet transactions)
+ * @param {string} bayar 'QRIS' | 'VA' | 'COD' | 'TRANSFER'
  * @param {string} statusBayar 'PENDING' | 'PAID' | 'EXPIRED' | 'FAILED' | ''
  * @return {string}
  */
@@ -1741,6 +1776,32 @@ function orderStatusLabel(status, bayar, statusBayar){
 }
 function orderBelumBayar(bayar, statusBayar){
   return (bayar==='QRIS' || bayar==='VA') && statusBayar==='PENDING';
+}
+
+/**
+ * Render progress bar 4 tahap (Menunggu Konfirmasi -> Diproses -> Diantar -> Selesai)
+ * buat ditampilkan di struk (openReceiptOrder). Kalau status 'Dibatalkan', tampilkan
+ * banner merah sebagai gantinya (linear step gak relevan buat pesanan batal). Status
+ * tidak dikenal (mis. belum sempat di-refresh dari server) dianggap tahap pertama.
+ * @param {string} status status mentah pesanan (order.status)
+ * @return {string} HTML
+ */
+function renderOrderSteps(status){
+  if(status === 'Dibatalkan'){
+    return '<div class="order-cancelled-banner">Pesanan ini dibatalkan</div>';
+  }
+  const currentIdx = Math.max(0, PESANAN_STEP_ORDER.indexOf(status));
+  return `<div class="order-steps">
+    ${PESANAN_STEP_ORDER.map((s, i)=>{
+      const done = i < currentIdx;
+      const current = i === currentIdx;
+      return `<div class="order-step" data-done="${done}" data-current="${current}">
+        <div class="order-step-line"></div>
+        <div class="order-step-dot">${done ? '&#10003;' : (i+1)}</div>
+        <div class="order-step-label">${esc(PESANAN_STEP_LABEL[s]).replace(String.fromCharCode(10),'<br>')}</div>
+      </div>`;
+    }).join('')}
+  </div>`;
 }
 
 /**
@@ -1783,6 +1844,8 @@ function openReceiptOrder(order){
       <div class="receipt-eyebrow">${esc(STORE.nama)}</div>
       <div class="receipt-msg">Pesanan diterima!</div>
       <div class="receipt-num">${order.nomor}</div>
+      <div class="receipt-div"></div>
+      ${renderOrderSteps(order.status)}
       <div class="receipt-div"></div>
       <div class="receipt-items">
         ${order.items.map(it=>`<div style="display:flex;justify-content:space-between;gap:8px"><span>${it.qty}x ${esc(it.nama)}</span><span>${rupiah(it.harga*it.qty)}</span></div>`).join('')}
