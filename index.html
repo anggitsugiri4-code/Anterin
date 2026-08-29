@@ -436,7 +436,10 @@ let CATEGORY_PHOTOS = {};
 /* Promo banner beranda — tampil sbg kartu yg bisa di-swipe kalau isinya >1.
    Kosongkan array ini (jadi []) kalau belum ada promo berjalan. Field
    `emoji` opsional, cuma aksen visual kecil di kartu. */
-const PROMOS = [
+// let (bukan const): ditimpa loadPengaturanToko() kalau admin udah ngatur
+// kartu promo dari Kasir. Array ini tetep jadi fallback kalau belum ada
+// data dari server / server lagi gak bisa dihubungi.
+let PROMOS = [
   { emoji:"🍜", judul:"Paket Hemat Makan Siang", sub:"Nasi + lauk + es teh, langsung kenyang", periode:"Berlaku 11.00–14.00" },
   { emoji:"☕", judul:"Diskon Kopi Susu", sub:"Beli 2 gratis 1 varian kopi susu pilihan", periode:"Selama stok tersedia" },
   { emoji:"🥤", judul:"Gratis Es Teh", sub:"Tiap pembelian menu makanan berat", periode:"Berlaku tiap hari" },
@@ -569,6 +572,15 @@ async function loadPengaturanToko(){
     STORE.promoBanner = s.promo_banner || '';
     STORE.promoTitle = s.promo_title || '';
     STORE.promoDesc = s.promo_desc || '';
+    if (s.promo_cards) {
+      try {
+        const parsed = JSON.parse(s.promo_cards);
+        if (Array.isArray(parsed)) {
+          const cleaned = parsed.filter(function (c) { return c && c.judul; });
+          if (cleaned.length) PROMOS = cleaned;
+        }
+      } catch (e) { console.warn('promo_cards dari server bukan JSON valid, pakai default:', e.message); }
+    }
     applyStoreBranding();
   }catch(e){
     console.warn('Gagal muat pengaturan toko dari server, pakai nilai default:', e.message);
