@@ -925,10 +925,17 @@ function clearSearch(){
    ================================================================ */
 /** Kartu promo makanan/minuman di carousel beranda (lihat PROMOS). */
 function promoCard(p){
+  const hasImg = !!p.gambar;
+  // BARU: kalau admin pilih gambar dari galeri (lewat app Kasir), gambar itu
+  // dipasang sbg background kartu (gantiin emoji) dgn overlay gelap tipis
+  // biar judul/teks putih di atasnya tetap kebaca.
+  const bgStyle = hasImg
+    ? ` style="background-image:linear-gradient(180deg, rgba(0,0,0,.05) 0%, rgba(0,0,0,.62) 100%), url('${esc(p.gambar)}');background-size:cover;background-position:center;display:flex;flex-direction:column;justify-content:flex-end"`
+    : '';
   return `<div class="promo-card">
-    <div class="chalkboard chalkboard-plain">
-      <div style="font-size:26px;line-height:1">${esc(p.emoji||'🎉')}</div>
-      <div class="font-chalk" style="font-size:21px;margin-top:6px">${esc(p.judul)}</div>
+    <div class="chalkboard chalkboard-plain"${bgStyle}>
+      ${hasImg ? '' : `<div style="font-size:26px;line-height:1">${esc(p.emoji||'🎉')}</div>`}
+      <div class="font-chalk" style="font-size:21px;margin-top:${hasImg ? '0' : '6px'}">${esc(p.judul)}</div>
       ${p.sub ? `<div style="font-size:12px;opacity:.85;margin-top:4px">${esc(p.sub)}</div>` : ''}
       ${p.periode ? `<div style="font-size:10px;text-transform:uppercase;letter-spacing:.08em;opacity:.75;margin-top:8px">${esc(p.periode)}</div>` : ''}
     </div>
