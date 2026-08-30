@@ -1919,6 +1919,41 @@ loadKatalog();
 loadPengaturanToko(); // BARU: tarik Nama/Logo/Alamat/WA toko terbaru dari server, bukan localStorage
 
 /* ================================================================
+   POLLING PROMO — biar promo baru yg diatur di Kasir kelihatan di
+   Anterin otomatis, TANPA customer perlu reload manual.
+   Cuma manggil ulang loadPengaturanToko() yg sama kayak dipanggil pas
+   app dibuka (baris di atas) - dia cuma nge-refresh STORE.promo*/PROMOS
+   lalu render ulang tab beranda (applyStoreBranding -> renderTabContent).
+   Container yg ke-refresh itu TERPISAH dari keranjang (cart-overlay),
+   form checkout (state.form/renderCartBody), dan kotak pencarian
+   (search-input, hidup di renderShell) - jadi aman, gak nyentuh/nge-reset
+   apa pun yg lagi diisi/dipencet customer.
+   - Interval 60 detik: cukup responsif buat promo, gak royal manggil
+     Apps Script Web App (ada limit eksekusi harian per akun Google).
+   - Berhenti polling pas app di-background (layar dikunci, pindah tab,
+     app diminimize) - Page Visibility API, biar gak buang kuota/baterai
+     HP customer narik data yg gak lagi keliatan.
+   - Begitu app aktif lagi, langsung tarik SEKALI saat itu juga (gak
+     nunggu interval 60 detik penuh) - promo yg berubah pas app lagi
+     di-background jadi langsung ke-update pas dibuka lagi.
+   ================================================================ */
+var PROMO_POLL_INTERVAL_MS = 60000; // 60 detik - ubah di sini kalau mau lebih/kurang responsif
+var promoPollTimer = null;
+
+function startPromoPolling(){
+  if(promoPollTimer) return; // udah jalan, jangan pasang 2x
+  promoPollTimer = setInterval(function(){
+    if(document.visibilityState === 'visible') loadPengaturanToko();
+  }, PROMO_POLL_INTERVAL_MS);
+}
+
+document.addEventListener('visibilitychange', function(){
+  if(document.visibilityState === 'visible') loadPengaturanToko();
+});
+
+startPromoPolling();
+
+/* ================================================================
    PWA — daftar service worker + tombol "Install App"
    ================================================================ */
 if('serviceWorker' in navigator){
