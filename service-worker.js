@@ -8,7 +8,7 @@
  * ke-submit ganda. Naikin CACHE_VERSION tiap kali index.html
  * diupdate supaya user lama otomatis ke-refresh cache-nya.
  */
-const CACHE_VERSION = 'Anterin-shell-v2';
+const CACHE_VERSION = 'Anterin-shell-v3';
 const SHELL_FILES = [
   './index.html',
   './manifest.json',
@@ -16,7 +16,6 @@ const SHELL_FILES = [
   './icon-512.png',
   './icon-512-maskable.png'
 ];
-
 self.addEventListener('install', function (event) {
   event.waitUntil(
     caches.open(CACHE_VERSION)
@@ -24,7 +23,6 @@ self.addEventListener('install', function (event) {
       .then(function () { return self.skipWaiting(); })
   );
 });
-
 self.addEventListener('activate', function (event) {
   event.waitUntil(
     caches.keys().then(function (keys) {
@@ -35,16 +33,13 @@ self.addEventListener('activate', function (event) {
     }).then(function () { return self.clients.claim(); })
   );
 });
-
 self.addEventListener('fetch', function (event) {
   const req = event.request;
-
   // Jangan pernah campur tangan request ke backend Apps Script (POST katalog/
   // checkout) — selalu langsung ke jaringan, tidak pernah dari cache.
   if (req.method !== 'GET' || req.url.indexOf('script.google.com') !== -1) {
     return;
   }
-
   // App shell: cache-first (buka instan + tetap kebuka offline), lalu diam-diam
   // update cache di background kalau jaringan ada (stale-while-revalidate).
   event.respondWith(
