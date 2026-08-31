@@ -1963,6 +1963,44 @@ document.addEventListener('visibilitychange', function(){
 startPromoPolling();
 
 /* ================================================================
+   [FIX] POLLING STATUS PESANAN — biar status pesanan (mis. kasir
+   baru tandai "Dikirim"/"Selesai") kelihatan otomatis di tab Pesanan
+   / struk yang lagi kebuka, TANPA customer wajib pindah-balik tab
+   Pesanan manual.
+   SEBELUMNYA refreshOrderStatuses_ CUMA jalan pas tab Pesanan baru
+   DIBUKA (lihat setTab) - gak ada auto-poll kayak sisi Kasir (yang
+   polling tiap 8 detik). Kalau customer diem aja natap struk/tab
+   yang sama, status kelihatan "mentok" (mis. tetap "Sedang diantar")
+   padahal di server udah "Selesai".
+   Pola sama persis kayak POLLING PROMO di atas: interval + Page
+   Visibility API (berhenti pas app di-background, tarik sekali pas
+   aktif lagi). Cuma jalan kalau ADA pesanan yang masih aktif (belum
+   Selesai/Dibatalkan) - biar gak nembak Apps Script Web App
+   terus-terusan pas semua pesanan customer udah kelar.
+   ================================================================ */
+var ORDER_STATUS_POLL_INTERVAL_MS = 20000; // 20 detik - cukup responsif, gak boros kuota
+
+function hasActiveOrders_(){
+  return state.orders.some(function(o){
+    return !o.dibatalkan && o.status !== 'Selesai' && o.status !== 'Dibatalkan';
+  });
+}
+
+var orderStatusPollTimer = null;
+function startOrderStatusPolling(){
+  if(orderStatusPollTimer) return; // udah jalan, jangan pasang 2x
+  orderStatusPollTimer = setInterval(function(){
+    if(document.visibilityState === 'visible' && hasActiveOrders_()) refreshOrderStatuses_();
+  }, ORDER_STATUS_POLL_INTERVAL_MS);
+}
+
+document.addEventListener('visibilitychange', function(){
+  if(document.visibilityState === 'visible' && hasActiveOrders_()) refreshOrderStatuses_();
+});
+
+startOrderStatusPolling();
+
+/* ================================================================
    PWA — daftar service worker + tombol "Install App"
    ================================================================ */
 if('serviceWorker' in navigator){
