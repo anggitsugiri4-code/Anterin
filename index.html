@@ -490,7 +490,16 @@ function mapProdukPublik(p) {
     stok: Number(p.Stok) || 0,
     emoji: '🛒',
     gambar: p.Foto || null,
-    diskonPersen: 0,
+    // Promo produk (dari fitur "Promo Produk" di Kasir, disinkron server lewat
+    // apiKatalogProdukPublik -> field PromoAktif/DiskonPersen/PromoLabel).
+    // diskonPersen cuma keisi kalau tipe promo-nya "percent" (satu-satunya
+    // tipe yang harga-nya bisa dihitung otomatis di hargaAkhir()). Tipe
+    // "amount"/"bogo" tetap bikin produk masuk promoAktif (nongol di tab
+    // Promo + badge teks), tapi harga tampil apa adanya - kasir yang
+    // terapin diskon amount/bogo pas checkout, bukan Anterin.
+    promoAktif: !!p.PromoAktif,
+    promoLabel: p.PromoLabel || '',
+    diskonPersen: Number(p.DiskonPersen) || 0,
     unggulan: false
   };
 }
@@ -962,7 +971,7 @@ function productCard(p){
     : '<div class="thumb" aria-hidden="true">'+(p.emoji||'🛍️')+'</div>';
   return `
     <div class="price-tag">
-      ${p.diskonPersen ? '<span class="discount-flag">-'+p.diskonPersen+'%</span>' : ''}
+      ${p.diskonPersen ? '<span class="discount-flag">-'+p.diskonPersen+'%</span>' : (p.promoAktif && p.promoLabel ? '<span class="discount-flag">'+esc(p.promoLabel)+'</span>' : '')}
       ${thumb}
       <div class="name">${esc(p.nama)}</div>
       <div class="unit">per ${esc(p.satuan)}</div>
@@ -1022,7 +1031,7 @@ function tabBeranda(){
     <div class="promo-carousel" id="promo-carousel">${PROMOS.map(promoCard).join('')}</div>
     ${PROMOS.length>1 ? `<div class="promo-dots" id="promo-dots">${PROMOS.map((_,i)=>`<span class="dot" data-active="${i===0}"></span>`).join('')}</div>` : ''}` : '';
 
-  const diskonProduk = PRODUCTS.filter(p=>p.diskonPersen>0).slice(0,6);
+  const diskonProduk = PRODUCTS.filter(p=>p.promoAktif).slice(0,6);
   const diskonHtml = diskonProduk.length ? `
     <div class="section-head"><h2>Lagi Diskon</h2><button class="link" data-action="set-tab" data-tab="promo">Lihat semua</button></div>
     <div class="h-scroll-cards">${diskonProduk.map(productCard).join('')}</div>
@@ -1114,7 +1123,7 @@ function tabBelanja(){
 }
 
 function tabPromo(){
-  const diskon = PRODUCTS.filter(p=>p.diskonPersen>0);
+  const diskon = PRODUCTS.filter(p=>p.promoAktif);
   if(diskon.length===0){
     return emptyState('ticket','Belum ada promo aktif saat ini. Pantau terus, ya!','');
   }
@@ -1922,7 +1931,7 @@ loadPengaturanToko(); // BARU: tarik Nama/Logo/Alamat/WA toko terbaru dari serve
    POLLING PROMO — biar promo baru yg diatur di Kasir kelihatan di
    Anterin otomatis, TANPA customer perlu reload manual.
    Cuma manggil ulang loadPengaturanToko() yg sama kayak dipanggil pas
-   app dibuka (baris di atas) - dia cuma nge-refresh STORE.promo*//*PROMOS
+   app dibuka (baris di atas) - dia cuma nge-refresh STORE.promo / PROMOS
    lalu render ulang tab beranda (applyStoreBranding -> renderTabContent).
    Container yg ke-refresh itu TERPISAH dari keranjang (cart-overlay),
    form checkout (state.form/renderCartBody), dan kotak pencarian
@@ -1936,7 +1945,7 @@ loadPengaturanToko(); // BARU: tarik Nama/Logo/Alamat/WA toko terbaru dari serve
    - Begitu app aktif lagi, langsung tarik SEKALI saat itu juga (gak
      nunggu interval 60 detik penuh) - promo yg berubah pas app lagi
      di-background jadi langsung ke-update pas dibuka lagi.
-   ================================================================*/
+   ================================================================ */
 var PROMO_POLL_INTERVAL_MS = 60000; // 60 detik - ubah di sini kalau mau lebih/kurang responsif
 var promoPollTimer = null;
 
