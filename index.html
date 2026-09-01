@@ -124,7 +124,7 @@ input,textarea{font-family:inherit}
 .price-tag{position:relative;background:hsl(var(--card));border:1px solid hsl(var(--paper-line));border-radius:6px 6px 14px 14px;padding:22px 12px 12px;box-shadow:var(--shadow-sm);display:flex;flex-direction:column}
 .price-tag:before{content:"";position:absolute;top:-8px;left:50%;transform:translateX(-50%);width:14px;height:14px;border-radius:999px;background:hsl(var(--paper-deep));border:2px solid hsl(var(--paper-line))}
 .price-tag .thumb{font-size:38px;text-align:center;line-height:1;margin-bottom:8px}
-.price-tag img.thumb-img{width:100%;aspect-ratio:1/1;height:auto;object-fit:cover;object-position:center;border-radius:8px;margin-bottom:8px;display:block}
+.price-tag img.thumb-img{width:100%;aspect-ratio:1/1;height:auto;object-fit:contain;object-position:center;background:hsl(var(--paper));border-radius:8px;margin-bottom:8px;display:block}
 .price-tag .name{font-size:13px;font-weight:600;line-height:1.35;min-height:2.5em}
 .price-tag .unit{font-size:11px;color:hsl(var(--ink-soft));margin-top:2px}
 .price-tag .price{font-family:'Space Mono',monospace;font-weight:700;color:hsl(var(--red));margin-top:8px;font-size:15px}
@@ -974,7 +974,6 @@ function productCard(p){
       ${p.diskonPersen ? '<span class="discount-flag">-'+p.diskonPersen+'%</span>' : (p.promoAktif && p.promoLabel ? '<span class="discount-flag">'+esc(p.promoLabel)+'</span>' : '')}
       ${thumb}
       <div class="name">${esc(p.nama)}</div>
-      <div class="unit">per ${esc(p.satuan)}</div>
       ${rendahStok ? '<span class="stock-flag">Sisa '+p.stok+'</span>' : ''}
       ${p.diskonPersen
         ? '<div><div class="price-old">'+rupiah(p.harga)+'</div><div class="price">'+rupiah(hargaAkhir(p))+'</div></div>'
