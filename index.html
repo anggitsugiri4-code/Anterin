@@ -123,7 +123,7 @@ input,textarea{font-family:inherit}
 /* price-tag product card: rounded bottom, punch-hole circle on top */
 .price-tag{position:relative;background:hsl(var(--card));border:1px solid hsl(var(--paper-line));border-radius:6px 6px 14px 14px;padding:22px 12px 12px;box-shadow:var(--shadow-sm);display:flex;flex-direction:column}
 .price-tag:before{content:"";position:absolute;top:-8px;left:50%;transform:translateX(-50%);width:14px;height:14px;border-radius:999px;background:hsl(var(--paper-deep));border:2px solid hsl(var(--paper-line))}
-.price-tag .thumb{font-size:38px;text-align:center;line-height:1;margin-bottom:8px}
+.price-tag .thumb{width:100%;aspect-ratio:1/1;display:flex;align-items:center;justify-content:center;font-size:38px;line-height:1;margin-bottom:8px;background:hsl(var(--paper));border-radius:8px}
 .price-tag img.thumb-img{width:100%;aspect-ratio:1/1;height:auto;object-fit:contain;object-position:center;background:hsl(var(--paper));border-radius:8px;margin-bottom:8px;display:block}
 .price-tag .name{font-size:13px;font-weight:600;line-height:1.35;min-height:2.5em}
 .price-tag .unit{font-size:11px;color:hsl(var(--ink-soft));margin-top:2px}
@@ -149,12 +149,14 @@ input,textarea{font-family:inherit}
 .btn-primary:active{transform:scale(.96)}
 
 /* ---------- Hero / beranda ---------- */
-.hero-card{margin:14px 16px 0;border-radius:var(--r-lg);overflow:hidden;box-shadow:var(--shadow-sm)}
-.hero-card .chalkboard{border-radius:0;padding:20px 18px}
-.store-name{font-family:'Fraunces',serif;font-size:32px;line-height:1}
-.store-tagline{font-size:13px;color:rgba(255,255,255,.85);margin-top:4px}
-.hero-meta{display:flex;flex-direction:column;gap:6px;margin-top:14px;font-size:12px}
-.hero-meta-row{display:flex;align-items:center;gap:7px;color:rgba(255,255,255,.92)}
+.hero-card{margin:14px 16px 0;border-radius:var(--r-lg);overflow:hidden;box-shadow:var(--shadow-md)}
+.hero-card .chalkboard{border-radius:0;padding:20px 18px 18px;background:radial-gradient(130% 160% at 100% -10%, hsl(0 70% 42%) 0%, transparent 60%), linear-gradient(160deg, hsl(var(--red)), hsl(0 65% 32%))}
+.hero-top{display:flex;align-items:center;gap:10px}
+.hero-card .store-mark{width:44px;height:44px;font-size:22px}
+.store-name{font-family:'Fraunces',serif;font-size:23px;line-height:1.15}
+.store-tagline{font-size:13px;color:rgba(255,255,255,.85);margin-top:10px}
+.hero-meta{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.hero-meta .status-pill{padding:6px 12px;font-size:12px;background:rgba(255,255,255,.16)}
 
 /* ---------- Promo carousel (1 banner, swipe ganti slide) ---------- */
 .promo-banner-img-card{margin:14px 16px 0;border-radius:var(--r-lg);overflow:hidden;box-shadow:var(--shadow-sm);position:relative}
@@ -646,6 +648,13 @@ function isStoreOpen(){
   const nowMin = now.getHours()*60+now.getMinutes();
   return nowMin >= (oh*60+om) && nowMin < (ch*60+cm);
 }
+function greetingText(){
+  const h = new Date().getHours();
+  if(h>=5 && h<11) return 'Selamat pagi';
+  if(h>=11 && h<15) return 'Selamat siang';
+  if(h>=15 && h<18) return 'Selamat sore';
+  return 'Selamat malam';
+}
 function categoriesFromProducts(){
   // "Topping Seblak" sengaja disembunyikan dari chip kategori - kategori ini
   // cuma dipakai internal buat sheet "Pilih Topping" pas nambah Seblak ke
@@ -745,13 +754,7 @@ function renderShell(){
   app.innerHTML = `
     <header class="chalkboard">
       <div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
-        <div style="display:flex;align-items:center;gap:10px;min-width:0">
-          <div class="store-mark" id="store-mark">${STORE.logo ? '<img src="'+STORE.logo+'" alt="'+esc(STORE.nama)+'">' : esc(STORE.nama.charAt(0))}</div>
-          <div style="min-width:0">
-            <div class="font-chalk" id="store-name" style="font-size:22px;line-height:1">${esc(STORE.nama)}</div>
-            <span class="status-pill" id="status-pill"></span>
-          </div>
-        </div>
+        <div class="font-chalk" id="greeting" style="font-size:21px;line-height:1.2"></div>
         <div style="display:flex;gap:8px;flex:none">
           <a class="icon-btn" id="wa-link" href="#" target="_blank" rel="noopener" aria-label="Hubungi via WhatsApp">${icon('whatsapp')}</a>
           <button class="icon-btn" data-action="open-cart" aria-label="Buka keranjang">
@@ -815,6 +818,7 @@ function renderShell(){
   `;
 
   document.getElementById('wa-link').href = 'https://wa.me/'+STORE.whatsapp+'?text='+encodeURIComponent('Halo '+STORE.nama+', saya mau tanya-tanya.');
+  document.getElementById('greeting').textContent = greetingText() + ', CustomerKu!';
 
   const searchInput = document.getElementById('search-input');
   searchInput.addEventListener('input', e=>{
@@ -833,7 +837,9 @@ function renderShell(){
 
 function updateStatusPill(){
   const open = isStoreOpen();
-  document.getElementById('status-pill').innerHTML =
+  const pill = document.getElementById('status-pill');
+  if(!pill) return;
+  pill.innerHTML =
     '<span class="dot" style="background:'+(open?'#4ade80':'#fca5a5')+'"></span>'+
     (open ? 'Buka sekarang' : 'Tutup') + ' · '+STORE.jamBuka+'–'+STORE.jamTutup;
 }
@@ -1021,6 +1027,24 @@ function renderTabContent(){
 
 function tabBeranda(){
   const cats = categoriesFromProducts().filter(c=>c!=='Semua');
+  const heroOpen = isStoreOpen();
+  const heroCardHtml = `
+    <div class="hero-card">
+      <div class="chalkboard chalkboard-plain">
+        <div class="hero-top">
+          <div class="store-mark" aria-hidden="true">${STORE.logo ? '<img src="'+esc(STORE.logo)+'" alt="">' : esc(STORE.nama.charAt(0))}</div>
+          <div style="min-width:0">
+            <div class="store-name">${esc(STORE.nama)}</div>
+            <span class="status-pill"><span class="dot" style="background:${heroOpen?'#4ade80':'#fca5a5'}"></span>${heroOpen?'Buka sekarang':'Tutup'}</span>
+          </div>
+        </div>
+        <div class="store-tagline">${esc(STORE.tagline)}</div>
+        <div class="hero-meta">
+          <span class="status-pill">${icon('clock')} ${STORE.jamBuka}–${STORE.jamTutup}</span>
+          <span class="status-pill">${icon('mappin')} ${esc(STORE.alamat)}</span>
+        </div>
+      </div>
+    </div>`;
   const bannerHtml = (STORE.promoActive && STORE.promoBanner) ? `
     <div class="promo-banner-img-card">
       <img src="${esc(STORE.promoBanner)}" alt="${esc(STORE.promoTitle||'Promo')}">
@@ -1053,16 +1077,7 @@ function tabBeranda(){
 
   if(PRODUCTS.length===0){
     return `
-      <div class="hero-card">
-        <div class="chalkboard chalkboard-plain">
-          <div class="store-name">${esc(STORE.nama)}</div>
-          <div class="store-tagline">${esc(STORE.tagline)}</div>
-          <div class="hero-meta">
-            <div class="hero-meta-row">${icon('clock')} ${STORE.jamBuka}–${STORE.jamTutup}</div>
-            <div class="hero-meta-row">${icon('mappin')} ${esc(STORE.alamat)}</div>
-          </div>
-        </div>
-      </div>
+      ${heroCardHtml}
       ${bannerHtml}
       ${promoHtml}
       ${emptyState('boxEmpty','Katalog sedang disiapkan. Coba lagi sebentar lagi, ya!','')}
@@ -1070,16 +1085,7 @@ function tabBeranda(){
   }
 
   return `
-    <div class="hero-card">
-      <div class="chalkboard chalkboard-plain">
-        <div class="store-name">${esc(STORE.nama)}</div>
-        <div class="store-tagline">${esc(STORE.tagline)}</div>
-        <div class="hero-meta">
-          <div class="hero-meta-row">${icon('clock')} ${STORE.jamBuka}–${STORE.jamTutup}</div>
-          <div class="hero-meta-row">${icon('mappin')} ${esc(STORE.alamat)}</div>
-        </div>
-      </div>
-    </div>
+    ${heroCardHtml}
     ${bannerHtml}
     ${promoHtml}
     ${catHtml}
