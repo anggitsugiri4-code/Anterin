@@ -290,9 +290,16 @@ input,textarea{font-family:inherit}
 .field-label-plain{font-size:12px;font-weight:600;color:hsl(var(--ink-soft));margin-bottom:5px}
 .qris-box{border:1px solid hsl(var(--paper-line));border-radius:12px;padding:14px;margin-bottom:14px;text-align:center;background:hsl(var(--card))}
 .qris-box img{width:180px;height:180px;object-fit:contain;border-radius:8px;margin:0 auto 10px;display:block;background:#fff}
+.qris-box .qris-img-btn{border:none;background:none;padding:0;cursor:zoom-in;display:inline-block}
+.qris-box .qris-img-btn:active img{opacity:.8}
 .qris-total{font-family:'Space Mono',monospace;font-weight:700;font-size:16px;margin-bottom:6px}
 .qris-note{font-size:11.5px;color:hsl(var(--ink-soft));line-height:1.6}
 .qris-missing{font-size:12px;color:hsl(var(--red));line-height:1.6}
+
+.zoom-content{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:32px;opacity:0;transition:opacity var(--dur)}
+.overlay[data-open="true"] .zoom-content{opacity:1}
+.zoom-content img{max-width:100%;max-height:100%;border-radius:var(--r-md);background:#fff;padding:14px;display:block}
+.zoom-content .close-x{position:absolute;top:16px;right:16px}
 
 .field{margin-bottom:12px}
 .field label{display:block;font-size:12px;font-weight:600;color:hsl(var(--ink-soft));margin-bottom:5px}
@@ -830,6 +837,14 @@ function renderShell(){
       <div class="dialog" id="legal-body"></div>
     </div>
 
+    <div class="overlay" id="zoom-overlay">
+      <div class="overlay-backdrop" data-action="close-zoom"></div>
+      <div class="zoom-content">
+        <button class="close-x" data-action="close-zoom" aria-label="Tutup">${icon('x')}</button>
+        <img id="zoom-image" src="" alt="">
+      </div>
+    </div>
+
     <div class="toast" id="toast"></div>
   `;
 
@@ -1318,6 +1333,17 @@ function closeLegal(){
   document.body.style.overflow='';
 }
 
+function openImageZoom(url, alt){
+  if(!url) return;
+  const img = document.getElementById('zoom-image');
+  img.src = url;
+  img.alt = alt || '';
+  document.getElementById('zoom-overlay').setAttribute('data-open','true');
+}
+function closeImageZoom(){
+  document.getElementById('zoom-overlay').setAttribute('data-open','false');
+}
+
 function attachFaqListeners(){
   document.querySelectorAll('[data-action="toggle-faq"]').forEach(btn=>{
     btn.addEventListener('click', ()=>{
@@ -1471,7 +1497,10 @@ function qrisManualInfoBox(){
     </div>`;
   }
   return `<div class="qris-box">
-    <img src="${esc(STORE.qrisImageUrl)}" alt="QRIS ${esc(STORE.nama)}">
+    <button type="button" class="qris-img-btn" data-action="zoom-qris" aria-label="Perbesar QRIS">
+      <img src="${esc(STORE.qrisImageUrl)}" alt="QRIS ${esc(STORE.nama)}">
+    </button>
+    <div class="qris-note" style="margin-top:-4px;margin-bottom:8px">Ketuk gambar untuk perbesar</div>
     <div class="qris-total">${rupiah(cartTotal())}</div>
     <div class="qris-note">Scan pakai aplikasi bank/e-wallet apa saja, lalu upload bukti pembayaran di layar struk setelah kamu klik "Kirim Pesanan".</div>
   </div>`;
@@ -1964,9 +1993,11 @@ document.addEventListener('click', function(e){
   else if(a==='retry-katalog') loadKatalog();
   else if(a==='open-legal') openLegal(t.dataset.legal);
   else if(a==='close-legal') closeLegal();
+  else if(a==='zoom-qris') openImageZoom(STORE.qrisImageUrl, 'QRIS ' + STORE.nama);
+  else if(a==='close-zoom') closeImageZoom();
 });
 document.addEventListener('keydown', function(e){
-  if(e.key==='Escape'){ closeCart(); closeCheckout(); closeReceipt(); closeLegal(); closeProductSheet(); }
+  if(e.key==='Escape'){ closeCart(); closeCheckout(); closeReceipt(); closeLegal(); closeProductSheet(); closeImageZoom(); }
 });
 
 /* ================================================================
