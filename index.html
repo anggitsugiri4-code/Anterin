@@ -414,6 +414,14 @@ const STORE = {
   // saja asal link gambar langsung/.png/.jpg). Dikosongkan = opsi QRIS tetap muncul
   // tapi kasih tau customer belum diatur, arahkan pilih Bayar di Tempat.
   qrisImageUrl: "",
+  // BARU: detail rekening transfer manual, sinkron dari Pengaturan > Edit
+  // Profil Toko di app Kasir (business_profile.bank_name/bank_account_number/
+  // bank_account_holder) lewat action 'pengaturanTokoPublik', sama pola kayak
+  // qrisImageUrl di atas. Dikosongkan = opsi Transfer tetap muncul tapi kasih
+  // tau customer belum diatur.
+  bankName: "",
+  bankAccount: "",
+  bankHolder: "",
   // BARU: banner promo gambar tunggal, diatur dari app Kasir (Pengaturan
   // Promosi) lalu disinkron ke sini lewat action 'pengaturanTokoPublik'.
   // Beda dari array PROMOS di bawah (yang teks manual, ga kesambung server).
@@ -579,6 +587,14 @@ async function loadPengaturanToko(){
     if(s.whatsapp) STORE.whatsapp = s.whatsapp;
     if(s.alamat) STORE.alamat = s.alamat;
     STORE.logo = s.logo || ''; // logo boleh kosong (admin hapus logo) beda dari "belum ada data"
+    // BARU: QRIS (gambar statis, di-scan manual) & rekening Transfer Manual -
+    // sama-sama boleh kosong (belum diatur pemilik toko lewat Kasir), beda dari
+    // "belum ada data" makanya TIDAK pakai `if(s.x)` kayak whatsapp/alamat di
+    // atas (yang mempertahankan default lokal kalau server kosong).
+    STORE.qrisImageUrl = s.qris_photo_url || '';
+    STORE.bankName = s.bank_name || '';
+    STORE.bankAccount = s.bank_account_number || '';
+    STORE.bankHolder = s.bank_account_holder || '';
     STORE.promoActive = !!s.promo_active;
     STORE.promoBanner = s.promo_banner || '';
     STORE.promoTitle = s.promo_title || '';
@@ -683,7 +699,7 @@ const state = {
   selectedTopping: [], // BARU: id topping kepilih sementara di sheet, direset tiap buka/tutup
   receiptOrder: null,
   method: 'ambil',
-  payment: 'cod', // BARU: 'cod' (Bayar di Tempat) | 'qris' | 'va'
+  payment: 'cod', // 'cod' (Bayar di Tempat) | 'qris' (QRIS manual, gambar statis) | 'transfer' (Transfer Manual). 'va' dikenal state.vaBank di bawah tapi sudah tidak dipakai (peninggalan integrasi iPaymu lama, tombolnya sudah tidak dirender).
   vaBank: '', // BARU (metode bayar VA) - kode bank dipilih customer, wajib diisi kalau payment==='va'
   // BARU (fitur Tukar Poin checkout, mirror POSPage_poinDigunakan) - `poinDigunakan`
   // raw string dari input number (dibiarkan string, sama pola field lain di sini -
@@ -1177,7 +1193,7 @@ function tabPesanan(){
 }
 
 function tabAkun(){
-  const metode = 'Ada 2 pilihan langsung saat checkout: "Bayar di Tempat" (tunai, dibayar pas ambil/diterima) atau "QRIS" (scan & transfer sebelum pesanan dikirim ke toko).'
+  const metode = 'Ada 3 pilihan langsung saat checkout: "Bayar di Tempat" (tunai, dibayar pas ambil/diterima), "QRIS" (scan kode QRIS toko lalu upload bukti pembayaran di layar struk), atau "Transfer Manual" (transfer ke rekening toko lalu upload bukti transfer di layar struk).'
     + (STORE.metodePembayaran.length ? ' Metode lain: ' + STORE.metodePembayaran.join(', ') + ' - hubungi toko via WhatsApp.' : '');
   const faqs = [
     {q:'Bagaimana cara memesan?', a:'Pilih produk dan tambahkan ke keranjang, buka keranjang lalu ketuk Checkout, isi data pemesan, dan kirim. Toko akan menghubungi kamu lewat WhatsApp untuk konfirmasi.'},
@@ -1235,7 +1251,8 @@ const LEGAL_CONTENT = {
       <h3>4. Pembayaran</h3>
       <ul>
         <li><strong>Bayar di Tempat</strong> — dibayar tunai saat barang diambil/diterima.</li>
-        <li><strong>QRIS</strong> — dibayar via QR dinamis yang diproses melalui payment gateway iPaymu; status pembayaran terverifikasi otomatis, tidak perlu kirim bukti transfer manual.</li>
+        <li><strong>QRIS</strong> — scan kode QRIS toko pakai aplikasi bank/e-wallet apa saja, lalu upload bukti pembayaran di layar struk. Diverifikasi manual oleh toko, bukan otomatis lewat payment gateway.</li>
+        <li><strong>Transfer Manual</strong> — transfer ke rekening toko yang tertera saat checkout, lalu upload bukti transfer di layar struk. Diverifikasi manual oleh toko.</li>
         ${STORE.metodePembayaran.length ? `<li>Metode lain yang tersedia: ${esc(STORE.metodePembayaran.join(', '))}.</li>` : ''}
       </ul>
       <h3>5. Pengambilan &amp; Pengantaran</h3>
@@ -1258,7 +1275,7 @@ const LEGAL_CONTENT = {
       <ul>
         <li>Barang yang diterima tidak sesuai pesanan (salah produk/jumlah).</li>
         <li>Barang diterima dalam kondisi rusak atau tidak layak (kedaluwarsa, bocor, dsb).</li>
-        <li>Pesanan sudah dibayar (QRIS) tapi ternyata tidak bisa dipenuhi toko karena stok habis.</li>
+        <li>Pesanan sudah dibayar (QRIS/Transfer) tapi ternyata tidak bisa dipenuhi toko karena stok habis.</li>
         <li>Pesanan dibatalkan toko sebelum diproses/dikirim.</li>
       </ul>
       <h3>2. Kapan Refund Tidak Berlaku</h3>
@@ -1275,7 +1292,7 @@ const LEGAL_CONTENT = {
       </ol>
       <h3>4. Metode &amp; Waktu Pengembalian Dana</h3>
       <ul>
-        <li><strong>Pembayaran QRIS (iPaymu)</strong> — dana dikembalikan ke rekening/e-wallet sumber pembayaran, estimasi 3–7 hari kerja setelah klaim disetujui.</li>
+        <li><strong>QRIS &amp; Transfer Manual</strong> — dana dikembalikan lewat transfer ke rekening pemesan, dikoordinasikan langsung lewat WhatsApp toko setelah klaim disetujui.</li>
         <li><strong>Bayar di Tempat</strong> — dikembalikan tunai saat serah terima barang pengganti, atau transfer bank sesuai kesepakatan dengan toko.</li>
         <li>Alternatif lain (di luar refund tunai) adalah penggantian barang atau kompensasi Poin Member, sesuai kesepakatan pemesan dan toko.</li>
       </ul>
@@ -1426,13 +1443,38 @@ function setMethod(m){ state.method=m; renderCheckoutBody(); }
 function setPayment(p){ state.payment=p; renderCheckoutBody(); }
 
 function transferInfoBox(){
+  if(!STORE.bankAccount){
+    return `<div class="qris-box">
+      <div class="qris-missing">Rekening transfer belum diatur toko. Silakan pilih "Bayar di Tempat", atau hubungi toko via WhatsApp dulu.</div>
+    </div>`;
+  }
   return `
     <div class="qris-box">
       <div class="qris-note" style="font-weight:600">Transfer ke:</div>
-      <div class="font-mono" style="font-size:16px;font-weight:700;margin:6px 0">4600187771 BCA a.n ANGGIT SUGIRI</div>
+      <div class="font-mono" style="font-size:16px;font-weight:700;margin:6px 0">${esc(STORE.bankAccount)}${STORE.bankName ? ' '+esc(STORE.bankName) : ''}${STORE.bankHolder ? ' a.n '+esc(STORE.bankHolder) : ''}</div>
       <div class="qris-note">Bukti transfer diupload di layar struk setelah pesan.</div>
     </div>
   `;
+}
+// BARU: QRIS "manual" ala Kasir - gambar QRIS statis milik toko (diupload dari
+// Pengaturan > Edit Profil Toko di app Kasir, sama gambar yang muncul di layar
+// Bayar kasir), pelanggan scan sendiri pakai e-wallet/m-banking apa saja lalu
+// upload bukti di layar struk setelah pesan (sama alurnya kayak Transfer Manual
+// di atas). Beda dari qrisBox() di bawah, yang QR dinamis per-pesanan via
+// payment gateway iPaymu (terverifikasi otomatis) - fungsi lama itu TIDAK
+// dipanggil dari renderCheckoutBody() lagi, dibiarkan apa adanya kalau suatu
+// saat integrasi iPaymu itu mau diaktifkan lagi.
+function qrisManualInfoBox(){
+  if(!STORE.qrisImageUrl){
+    return `<div class="qris-box">
+      <div class="qris-missing">QRIS belum diatur toko. Silakan pilih "Bayar di Tempat", atau hubungi toko via WhatsApp dulu.</div>
+    </div>`;
+  }
+  return `<div class="qris-box">
+    <img src="${esc(STORE.qrisImageUrl)}" alt="QRIS ${esc(STORE.nama)}">
+    <div class="qris-total">${rupiah(cartTotal())}</div>
+    <div class="qris-note">Scan pakai aplikasi bank/e-wallet apa saja, lalu upload bukti pembayaran di layar struk setelah kamu klik "Kirim Pesanan".</div>
+  </div>`;
 }
 function qrisBox(){
   // BARU (integrasi QRIS ASLI via iPaymu) - QR dinamis cuma bisa dibuat SETELAH
@@ -1478,9 +1520,10 @@ function renderCheckoutBody(){
     <div class="field-label-plain">Metode Pembayaran</div>
     <div class="method-toggle">
       <button class="method-btn" data-action="set-payment" data-payment="cod" data-active="${state.payment==='cod'}">${icon('store')} Bayar di Tempat</button>
-      <button class="method-btn" data-action="set-payment" data-payment="transfer" data-active="${state.payment==='transfer'}">${icon('bank')} Transfer Manual</button>
+      <button class="method-btn" data-action="set-payment" data-payment="qris" data-active="${state.payment==='qris'}">${icon('qrcode')} QRIS</button>
+      <button class="method-btn" data-action="set-payment" data-payment="transfer" data-active="${state.payment==='transfer'}">${icon('bank')} Transfer</button>
     </div>
-    ${state.payment==='transfer' ? transferInfoBox() : ''}
+    ${state.payment==='qris' ? qrisManualInfoBox() : (state.payment==='transfer' ? transferInfoBox() : '')}
     <div class="checkout-summary"><span>Total (${n} item)</span><span class="val" id="checkout-total-val">${rupiah(cartTotal())}</span></div>
     <button class="submit-btn" id="submit-order-btn" data-action="submit-order" ${isSubmitEnabled()?'':'disabled'}>Kirim Pesanan</button>
     <div class="submit-hint">Toko akan mengonfirmasi pesananmu lewat WhatsApp ke nomor yang kamu isi.</div>
@@ -1539,7 +1582,7 @@ async function submitOrder(){
       alamat: state.method==='antar' ? state.form.alamat.trim() : '',
       items: lines.map(l=>({ produkId: l.produk.id, qty: l.qty })),
       catatan: state.form.catatan.trim(),
-      metodeBayar: state.payment==='transfer' ? 'TRANSFER' : 'COD'
+      metodeBayar: state.payment==='transfer' ? 'TRANSFER' : (state.payment==='qris' ? 'QRIS' : 'COD')
     });
     // `saved` datang dari PesananOnlineModel.toClientObject (server) - dipakai
     // apa adanya buat struk (Kode resmi, Items sudah dihitung ulang server,
@@ -1551,7 +1594,7 @@ async function submitOrder(){
       alamat: saved.Alamat || '',
       catatan: saved.Catatan || '',
       metode: state.method,
-      bayar: saved.MetodeBayar || (state.payment==='transfer' ? 'TRANSFER' : 'COD'),
+      bayar: saved.MetodeBayar || (state.payment==='transfer' ? 'TRANSFER' : (state.payment==='qris' ? 'QRIS' : 'COD')),
       items: (saved.Items || []).map(it=>({ nama: it.nama, qty: it.qty, harga: it.harga })),
       jumlahItem: (saved.Items || []).reduce((s,it)=>s+it.qty,0),
       total: saved.Total != null ? saved.Total : cartTotal(),
@@ -1655,11 +1698,11 @@ const PESANAN_STEP_LABEL = {
  * @return {string}
  */
 function orderStatusLabel(status, bayar, statusBayar){
-  if((bayar==='QRIS' || bayar==='VA') && statusBayar==='PENDING') return 'Menunggu Pembayaran';
+  if(bayar==='VA' && statusBayar==='PENDING') return 'Menunggu Pembayaran';
   return PESANAN_STATUS_LABEL[status] || status || 'Menunggu konfirmasi';
 }
 function orderBelumBayar(bayar, statusBayar){
-  return (bayar==='QRIS' || bayar==='VA') && statusBayar==='PENDING';
+  return bayar==='VA' && statusBayar==='PENDING';
 }
 
 /**
@@ -1720,7 +1763,9 @@ function openReceiptOrder(order){
   state.receiptOrder = order;
   const body = document.getElementById('receipt-body');
   const isTransfer = order.bayar==='TRANSFER';
-  const bayarLabel = isTransfer ? 'Transfer Manual' : 'Tempat (COD)';
+  const isQris = order.bayar==='QRIS';
+  const butuhBuktiManual = isTransfer || isQris;
+  const bayarLabel = isTransfer ? 'Transfer Manual' : (isQris ? 'QRIS' : 'Tempat (COD)');
   body.innerHTML = `
     <div class="receipt-edge"></div>
     <div class="receipt-body">
@@ -1744,11 +1789,11 @@ function openReceiptOrder(order){
         <div style="display:flex;justify-content:space-between;font-weight:700;margin-top:6px"><span>Total</span><span>${rupiah(order.total)}</span></div>
       </div>
       <div class="receipt-div"></div>
-      ${isTransfer ? `
+      ${butuhBuktiManual ? `
         <div class="qris-box" id="transfer-payment-box">
-          <div id="transfer-status-badge" class="qris-note" style="font-weight:600">${order.statusBayar==='PAID'?'Pembayaran diterima ✓':(order.statusBayar==='REJECTED'?'Bukti ditolak - hubungi toko':'Menunggu bukti transfer')}</div>
+          <div id="transfer-status-badge" class="qris-note" style="font-weight:600">${order.statusBayar==='PAID'?'Pembayaran diterima ✓':(order.statusBayar==='REJECTED'?'Bukti ditolak - hubungi toko':(isQris ? 'Menunggu bukti pembayaran' : 'Menunggu bukti transfer'))}</div>
           <input type="file" id="bukti-transfer-input" accept="image/*" style="width:100%;margin:8px 0">
-          <button class="btn-outline" data-action="upload-bukti-transfer" data-order-nomor="${esc(order.nomor)}" style="width:100%">Kirim Bukti Transfer</button>
+          <button class="btn-outline" data-action="upload-bukti-transfer" data-order-nomor="${esc(order.nomor)}" style="width:100%">${isQris ? 'Kirim Bukti Pembayaran' : 'Kirim Bukti Transfer'}</button>
         </div>
       ` : ''}
       <div class="receipt-note">Simpan nomor pesanan ini. Toko akan menghubungi kamu via WhatsApp untuk konfirmasi.</div>
